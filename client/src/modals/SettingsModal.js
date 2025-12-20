@@ -18,19 +18,49 @@ const styles = {
   },
 };
 
-function SettingsModal({ show, handleClose }) {
+function SettingsModal({ show, handleClose, initialTab = 'rate-limits', onApiKeyDeleted }) {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('rate-limits');
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [apiKeys, setApiKeys] = useState([]);
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [newApiKey, setNewApiKey] = useState({
+    toolName: '',
+    name: '',
+    apiKey: '',
+    appId: '',
+    appSecret: ''
+  });
+  const [saving, setSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState('success');
+
+  const [aiApiKeys, setAiApiKeys] = useState([]);
+  const [aiApiKeyLoading, setAiApiKeyLoading] = useState(false);
+  const [newAiApiKey, setNewAiApiKey] = useState({
+    provider: '',
+    name: '',
+    apiKey: '',
+    organizationId: '',
+    projectId: '',
+    endpoint: ''
+  });
 
   useEffect(() => {
     if (show) {
       fetchSettings();
+      fetchApiKeys();
+      fetchAiApiKeys();
       setSaveSuccess(false);
     }
   }, [show]);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -58,7 +88,12 @@ function SettingsModal({ show, handleClose }) {
         cewl_rate_limit: 10,
         gospider_rate_limit: 5,
         subdomainizer_rate_limit: 5,
-        nuclei_screenshot_rate_limit: 20
+        nuclei_screenshot_rate_limit: 20,
+        burp_proxy_ip: '127.0.0.1',
+        burp_proxy_port: 8080,
+        burp_api_ip: '127.0.0.1',
+        burp_api_port: 1337,
+        burp_api_key: ''
       };
       
       // Check if data is empty or missing expected properties
@@ -81,7 +116,12 @@ function SettingsModal({ show, handleClose }) {
         cewl_rate_limit: 10,
         gospider_rate_limit: 5,
         subdomainizer_rate_limit: 5,
-        nuclei_screenshot_rate_limit: 20
+        nuclei_screenshot_rate_limit: 20,
+        burp_proxy_ip: '127.0.0.1',
+        burp_proxy_port: 8080,
+        burp_api_ip: '127.0.0.1',
+        burp_api_port: 1337,
+        burp_api_key: ''
       });
     } finally {
       setLoading(false);
@@ -97,35 +137,393 @@ function SettingsModal({ show, handleClose }) {
   };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
-      setLoading(true);
-      setSaveSuccess(false);
-      setError(null);
-      
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/user/settings`,
-        {
+      if (activeTab === 'api-keys') {
+        // For API keys, just close the modal after successful save
+        await handleCreateApiKey();
+        handleClose();
+      } else {
+        // For other settings, show the success toast
+        const response = await fetch('/api/settings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(settings),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save settings');
+        }
+
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          handleClose();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setShowToast(true);
+      setToastMessage('Error saving settings');
+      setToastVariant('danger');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fetchApiKeys = async () => {
+    setApiKeyLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/api-keys`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch API keys');
+      }
+      
+      const data = await response.json();
+      setApiKeys(data || []);
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      setError('Failed to load API keys. Please try again.');
+    } finally {
+      setApiKeyLoading(false);
+    }
+  };
+
+  const fetchAiApiKeys = async () => {
+    setAiApiKeyLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/ai-api-keys`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI API keys');
+      }
+      
+      const data = await response.json();
+      setAiApiKeys(data || []);
+    } catch (error) {
+      console.error('Error fetching AI API keys:', error);
+      setError('Failed to load AI API keys. Please try again.');
+    } finally {
+      setAiApiKeyLoading(false);
+    }
+  };
+
+  const getKeyFieldsForTool = (toolName) => {
+    switch (toolName) {
+      case 'Censys':
+        return [
+          { name: 'app_id', label: 'App ID', type: 'text' },
+          { name: 'app_secret', label: 'App Secret', type: 'text' }
+        ];
+      default:
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text' }
+        ];
+    }
+  };
+
+  const getAiKeyFieldsForProvider = (provider) => {
+    switch (provider) {
+      case 'OpenAI':
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text', required: true },
+          { name: 'organization_id', label: 'Organization ID', type: 'text', required: false }
+        ];
+      case 'Anthropic':
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text', required: true }
+        ];
+      case 'Google':
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text', required: true },
+          { name: 'project_id', label: 'Project ID', type: 'text', required: false }
+        ];
+      case 'Azure OpenAI':
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text', required: true },
+          { name: 'endpoint', label: 'Endpoint URL', type: 'text', required: true }
+        ];
+      case 'Cohere':
+      case 'Hugging Face':
+      case 'Replicate':
+      case 'Together AI':
+      case 'Perplexity':
+      case 'Mistral AI':
+      default:
+        return [
+          { name: 'api_key', label: 'API Key', type: 'text', required: true }
+        ];
+    }
+  };
+
+  const handleCreateApiKey = async () => {
+    if (!newApiKey.toolName || !newApiKey.name) {
+      setToastMessage('Please fill in all required fields');
+      setToastVariant('danger');
+      setShowToast(true);
+      return;
+    }
+
+    // Validate key values based on tool type
+    if ((newApiKey.toolName === 'SecurityTrails' || newApiKey.toolName === 'GitHub' || newApiKey.toolName === 'Shodan') && !newApiKey.apiKey) {
+      setToastMessage('API Key is required for this tool');
+      setToastVariant('danger');
+      setShowToast(true);
+      return;
+    }
+
+    if (newApiKey.toolName === 'Censys' && (!newApiKey.appId || !newApiKey.appSecret)) {
+      setToastMessage('App ID and App Secret are required for Censys');
+      setToastVariant('danger');
+      setShowToast(true);
+      return;
+    }
+
+    // Check if this is the first key for this tool
+    const existingKeysForTool = apiKeys.filter(key => key.tool_name === newApiKey.toolName);
+    const isFirstKeyForTool = existingKeysForTool.length === 0;
+    const hasExistingSelection = localStorage.getItem(`selectedApiKey_${newApiKey.toolName}`);
+
+    try {
+      const keyValues = {};
+      
+      if (newApiKey.toolName === 'SecurityTrails' || newApiKey.toolName === 'GitHub' || newApiKey.toolName === 'Shodan') {
+        keyValues.api_key = newApiKey.apiKey;
+      } else if (newApiKey.toolName === 'Censys') {
+        keyValues.app_id = newApiKey.appId;
+        keyValues.app_secret = newApiKey.appSecret;
+      }
+
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/api-keys`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tool_name: newApiKey.toolName,
+            api_key_name: newApiKey.name,
+            key_values: keyValues,
+          }),
         }
       );
 
       if (!response.ok) {
-        throw new Error('Failed to save settings');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create API key');
       }
 
-      setSaveSuccess(true);
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
+      // If this is the first key for the tool OR there's no existing selection, make it the default
+      if (isFirstKeyForTool || !hasExistingSelection) {
+        localStorage.setItem(`selectedApiKey_${newApiKey.toolName}`, newApiKey.name);
+        
+        // Notify parent component about the new default selection
+        if (newApiKey.toolName === 'SecurityTrails') {
+          onApiKeyDeleted?.(); // This will trigger a re-check of all API keys
+        } else if (newApiKey.toolName === 'GitHub') {
+          onApiKeyDeleted?.();
+        } else if (newApiKey.toolName === 'Censys') {
+          onApiKeyDeleted?.();
+        } else if (newApiKey.toolName === 'Shodan') {
+          onApiKeyDeleted?.();
+        }
+      }
+
+      // Reset form
+      setNewApiKey({
+        toolName: '',
+        name: '',
+        apiKey: '',
+        appId: '',
+        appSecret: ''
+      });
+
+      // Refresh the API keys list
+      await fetchApiKeys();
+
+      setToastMessage(`API key "${newApiKey.name}" created successfully${(isFirstKeyForTool || !hasExistingSelection) ? ' and set as default' : ''}`);
+      setToastVariant('success');
+      setShowToast(true);
     } catch (error) {
-      console.error('Error saving settings:', error);
-      setError('Failed to save settings. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error creating API key:', error);
+      setToastMessage(error.message || 'Error creating API key');
+      setToastVariant('danger');
+      setShowToast(true);
+    }
+  };
+
+  const handleCreateAiApiKey = async () => {
+    if (!newAiApiKey.provider || !newAiApiKey.name) {
+      setToastMessage('Please fill in all required fields');
+      setToastVariant('danger');
+      setShowToast(true);
+      return;
+    }
+
+    // Validate required fields based on provider
+    const requiredFields = getAiKeyFieldsForProvider(newAiApiKey.provider).filter(field => field.required);
+    for (const field of requiredFields) {
+      const fieldValue = getAiFieldValue(field.name);
+      if (!fieldValue) {
+        setToastMessage(`${field.label} is required for ${newAiApiKey.provider}`);
+        setToastVariant('danger');
+        setShowToast(true);
+        return;
+      }
+    }
+
+    try {
+      const keyValues = {};
+      
+      // Build key values based on provider
+      if (newAiApiKey.apiKey) keyValues.api_key = newAiApiKey.apiKey;
+      if (newAiApiKey.organizationId) keyValues.organization_id = newAiApiKey.organizationId;
+      if (newAiApiKey.projectId) keyValues.project_id = newAiApiKey.projectId;
+      if (newAiApiKey.endpoint) keyValues.endpoint = newAiApiKey.endpoint;
+
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/ai-api-keys`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: newAiApiKey.provider,
+            api_key_name: newAiApiKey.name,
+            key_values: keyValues,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create AI API key');
+      }
+
+      // Reset form
+      setNewAiApiKey({
+        provider: '',
+        name: '',
+        apiKey: '',
+        organizationId: '',
+        projectId: '',
+        endpoint: ''
+      });
+
+      // Refresh the AI API keys list
+      await fetchAiApiKeys();
+
+      setToastMessage(`AI API key "${newAiApiKey.name}" created successfully`);
+      setToastVariant('success');
+      setShowToast(true);
+    } catch (error) {
+      console.error('Error creating AI API key:', error);
+      setToastMessage(error.message || 'Error creating AI API key');
+      setToastVariant('danger');
+      setShowToast(true);
+    }
+  };
+
+  const getAiFieldValue = (fieldName) => {
+    switch (fieldName) {
+      case 'api_key':
+        return newAiApiKey.apiKey;
+      case 'organization_id':
+        return newAiApiKey.organizationId;
+      case 'project_id':
+        return newAiApiKey.projectId;
+      case 'endpoint':
+        return newAiApiKey.endpoint || '';
+      default:
+        return '';
+    }
+  };
+
+  const handleAiFieldChange = (fieldName, value) => {
+    switch (fieldName) {
+      case 'api_key':
+        setNewAiApiKey(prev => ({ ...prev, apiKey: value }));
+        break;
+      case 'organization_id':
+        setNewAiApiKey(prev => ({ ...prev, organizationId: value }));
+        break;
+      case 'project_id':
+        setNewAiApiKey(prev => ({ ...prev, projectId: value }));
+        break;
+      case 'endpoint':
+        setNewAiApiKey(prev => ({ ...prev, endpoint: value }));
+        break;
+    }
+  };
+
+  const handleDeleteApiKey = async (id) => {
+    try {
+      // Find the key being deleted to check if it's currently selected
+      const keyToDelete = apiKeys.find(key => key.id === id);
+      const selectedKeyName = keyToDelete ? localStorage.getItem(`selectedApiKey_${keyToDelete.tool_name}`) : null;
+      
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/api-keys/${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete API key');
+      }
+
+      // If the deleted key was the selected one, remove it from localStorage
+      if (keyToDelete && selectedKeyName === keyToDelete.api_key_name) {
+        localStorage.removeItem(`selectedApiKey_${keyToDelete.tool_name}`);
+      }
+
+      // Notify parent component to re-check API keys
+      onApiKeyDeleted?.();
+
+      // Refresh the API keys list
+      await fetchApiKeys();
+    } catch (error) {
+      console.error('Error deleting API key:', error);
+      setShowToast(true);
+      setToastMessage('Error deleting API key');
+      setToastVariant('danger');
+    }
+  };
+
+  const handleDeleteAiApiKey = async (id) => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/ai-api-keys/${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete AI API key');
+      }
+
+      // Refresh the AI API keys list
+      await fetchAiApiKeys();
+
+      setToastMessage('AI API key deleted successfully');
+      setToastVariant('success');
+      setShowToast(true);
+    } catch (error) {
+      console.error('Error deleting AI API key:', error);
+      setShowToast(true);
+      setToastMessage('Error deleting AI API key');
+      setToastVariant('danger');
     }
   };
 
@@ -165,8 +563,33 @@ function SettingsModal({ show, handleClose }) {
     nuclei_screenshot: "Controls concurrent screenshot requests. Higher values increase speed but may trigger anti-bot measures."
   };
 
+  const truncateApiKey = (key, maxLength = 20) => {
+    if (!key || key.length <= maxLength) {
+      return key;
+    }
+    
+    const prefixLength = Math.floor(maxLength / 3);
+    const suffixLength = Math.floor(maxLength / 3);
+    const prefix = key.substring(0, prefixLength);
+    const suffix = key.substring(key.length - suffixLength);
+    
+    return `${prefix}...${suffix}`;
+  };
+
+  const renderApiKeyValue = (apiKey) => {
+    if (apiKey.tool_name === 'Censys') {
+      return `${truncateApiKey(apiKey.key_values.app_id)}:${truncateApiKey(apiKey.key_values.app_secret)}`;
+    }
+    return truncateApiKey(apiKey.key_values.api_key);
+  };
+
   return (
-    <Modal data-bs-theme="dark" show={show} onHide={handleClose} size="lg">
+    <Modal 
+      show={show} 
+      onHide={handleClose} 
+      size="xl"
+      data-bs-theme="dark"
+    >
       <Modal.Header closeButton>
         <Modal.Title className="text-danger">Settings</Modal.Title>
       </Modal.Header>
@@ -205,6 +628,39 @@ function SettingsModal({ show, handleClose }) {
                       }}
                     >
                       Custom HTTP
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link 
+                      eventKey="api-keys"
+                      className={`text-danger ${activeTab === 'api-keys' ? 'active' : ''}`}
+                      style={{
+                        ...(activeTab === 'api-keys' ? styles.navLinkActive : styles.navLink),
+                      }}
+                    >
+                      API Keys
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link 
+                      eventKey="burp-suite"
+                      className={`text-danger ${activeTab === 'burp-suite' ? 'active' : ''}`}
+                      style={{
+                        ...(activeTab === 'burp-suite' ? styles.navLinkActive : styles.navLink),
+                      }}
+                    >
+                      Burp Suite
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link 
+                      eventKey="ai-api-keys"
+                      className={`text-danger ${activeTab === 'ai-api-keys' ? 'active' : ''}`}
+                      style={{
+                        ...(activeTab === 'ai-api-keys' ? styles.navLinkActive : styles.navLink),
+                      }}
+                    >
+                      AI API Keys
                     </Nav.Link>
                   </Nav.Item>
                 </Nav>
@@ -354,6 +810,394 @@ function SettingsModal({ show, handleClose }) {
                       />
                     </Form.Group>
                   </Tab.Pane>
+                  <Tab.Pane eventKey="api-keys">
+                    <h5 className="text-danger mb-3">API Keys Management</h5>
+                    <p className="text-white-50 small mb-4">
+                      Manage API keys for the Domain Discovery tools. These keys will be used to enhance the capabilities of the tools.
+                    </p>
+                    
+                    <div className="mb-4">
+                      <h6 className="text-white mb-3">Add New API Key</h6>
+                      <Row className="mb-3">
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="text-white">Tool</Form.Label>
+                            <Form.Select
+                              value={newApiKey.toolName}
+                              onChange={(e) => setNewApiKey(prev => ({ ...prev, toolName: e.target.value }))}
+                              className="custom-input"
+                            >
+                              <option value="">Select a tool</option>
+                              <option value="SecurityTrails">SecurityTrails</option>
+                              <option value="Censys">Censys</option>
+                              <option value="Shodan">Shodan</option>
+                              <option value="GitHub">GitHub</option>
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="text-white">Key Name</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={newApiKey.name}
+                              onChange={(e) => setNewApiKey(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="Enter a name for this API key"
+                              className="custom-input"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      <Row className="mb-3">
+                        {getKeyFieldsForTool(newApiKey.toolName).map((field) => {
+                          const getFieldValue = (fieldName) => {
+                            switch (fieldName) {
+                              case 'api_key':
+                                return newApiKey.apiKey;
+                              case 'app_id':
+                                return newApiKey.appId;
+                              case 'app_secret':
+                                return newApiKey.appSecret;
+                              default:
+                                return '';
+                            }
+                          };
+
+                          const handleFieldChange = (fieldName, value) => {
+                            switch (fieldName) {
+                              case 'api_key':
+                                setNewApiKey(prev => ({ ...prev, apiKey: value }));
+                                break;
+                              case 'app_id':
+                                setNewApiKey(prev => ({ ...prev, appId: value }));
+                                break;
+                              case 'app_secret':
+                                setNewApiKey(prev => ({ ...prev, appSecret: value }));
+                                break;
+                            }
+                          };
+
+                          return (
+                            <Col key={field.name} md={field.name === 'api_key' ? 12 : 6}>
+                              <Form.Group>
+                                <Form.Label className="text-white">{field.label}</Form.Label>
+                                <Form.Control
+                                  type={field.type}
+                                  value={getFieldValue(field.name)}
+                                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                                  placeholder={`Enter ${field.label}`}
+                                  className="custom-input"
+                                />
+                              </Form.Group>
+                            </Col>
+                          );
+                        })}
+                      </Row>
+                      <Button 
+                        variant="danger" 
+                        onClick={handleCreateApiKey}
+                        disabled={apiKeyLoading}
+                      >
+                        {apiKeyLoading ? 'Adding...' : 'Add API Key'}
+                      </Button>
+                    </div>
+
+                    <div className="mb-4">
+                      <h6 className="text-white mb-3">Existing API Keys</h6>
+                      {apiKeyLoading ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border text-danger" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      ) : apiKeys.length === 0 ? (
+                        <p className="text-white-50">No API keys configured yet.</p>
+                      ) : (
+                        <div className="list-group" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                          {apiKeys.map((apiKey) => (
+                            <div key={apiKey.id} className="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center">
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <strong className="text-danger">{apiKey.tool_name}</strong>
+                                <br />
+                                <span className="text-white">
+                                  {apiKey.api_key_name}: {
+                                    apiKey.tool_name === 'Censys' 
+                                      ? `${truncateApiKey(apiKey.key_values.app_id)}:${truncateApiKey(apiKey.key_values.app_secret)}`
+                                      : truncateApiKey(apiKey.key_values.api_key)
+                                  }
+                                </span>
+                                <br />
+                                <small className="text-white-50">
+                                  Added: {new Date(apiKey.created_at).toLocaleDateString()}
+                                </small>
+                              </div>
+                              <Button 
+                                variant="outline-danger" 
+                                size="sm"
+                                onClick={() => handleDeleteApiKey(apiKey.id)}
+                                disabled={apiKeyLoading}
+                                style={{ flexShrink: 0, marginLeft: '10px' }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="burp-suite">
+                    <h5 className="text-danger mb-3">Burp Suite Configuration</h5>
+                    <p className="text-white-50 small mb-4">
+                      Configure your Burp Suite proxy and API settings for integration with the reconnaissance tools.
+                    </p>
+                    
+                    <Accordion className="mb-4">
+                      <Accordion.Item eventKey="0">
+                        <Accordion.Header>About Burp Suite Integration</Accordion.Header>
+                        <Accordion.Body>
+                          <p className="text-white-50 small">
+                            Burp Suite integration allows you to route HTTP traffic through your Burp proxy for analysis 
+                            and to use Burp's API for advanced features:
+                          </p>
+                          <ul className="text-white-50 small">
+                            <li><strong>Proxy Settings:</strong> Route tool traffic through Burp for request inspection and modification</li>
+                            <li><strong>API Integration:</strong> Use Burp's REST API for automated scanning and analysis</li>
+                            <li><strong>Traffic Analysis:</strong> Capture and analyze all HTTP requests from reconnaissance tools</li>
+                            <li><strong>Custom Extensions:</strong> Leverage Burp extensions for enhanced functionality</li>
+                          </ul>
+                          <p className="text-white-50 small">
+                            <strong>Note:</strong> Make sure Burp Suite is running and the proxy/API are properly configured 
+                            before using these settings.
+                          </p>
+                        </Accordion.Body>
+                      </Accordion.Item>
+                    </Accordion>
+                    
+                    <Row>
+                      <Col md={6}>
+                        <h6 className="text-white mb-3">Proxy Configuration</h6>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="text-white">Proxy IP Address</Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="127.0.0.1"
+                            value={settings.burp_proxy_ip || ''}
+                            onChange={(e) => handleChange('burp_proxy_ip', e.target.value)}
+                            className="custom-input"
+                          />
+                          <Form.Text className="text-white-50">
+                            IP address where Burp proxy is listening (default: 127.0.0.1)
+                          </Form.Text>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label className="text-white">Proxy Port</Form.Label>
+                          <Form.Control
+                            type="number"
+                            placeholder="8080"
+                            value={settings.burp_proxy_port || ''}
+                            onChange={(e) => handleChange('burp_proxy_port', parseInt(e.target.value) || '')}
+                            className="custom-input"
+                            min="1"
+                            max="65535"
+                          />
+                          <Form.Text className="text-white-50">
+                            Port where Burp proxy is listening (default: 8080)
+                          </Form.Text>
+                        </Form.Group>
+                      </Col>
+
+                      <Col md={6}>
+                        <h6 className="text-white mb-3">API Configuration</h6>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="text-white">API IP Address</Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="127.0.0.1"
+                            value={settings.burp_api_ip || ''}
+                            onChange={(e) => handleChange('burp_api_ip', e.target.value)}
+                            className="custom-input"
+                          />
+                          <Form.Text className="text-white-50">
+                            IP address where Burp API is listening (default: 127.0.0.1)
+                          </Form.Text>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                          <Form.Label className="text-white">API Port</Form.Label>
+                          <Form.Control
+                            type="number"
+                            placeholder="1337"
+                            value={settings.burp_api_port || ''}
+                            onChange={(e) => handleChange('burp_api_port', parseInt(e.target.value) || '')}
+                            className="custom-input"
+                            min="1"
+                            max="65535"
+                          />
+                          <Form.Text className="text-white-50">
+                            Port where Burp API is listening (default: 1337)
+                          </Form.Text>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+
+                    <Form.Group className="mb-4">
+                      <Form.Label className="text-white">API Key</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Enter your Burp Suite API key (optional)"
+                        value={settings.burp_api_key || ''}
+                        onChange={(e) => handleChange('burp_api_key', e.target.value)}
+                        className="custom-input"
+                      />
+                      <Form.Text className="text-white-50">
+                        API key for authenticating with Burp Suite's REST API (leave empty if not required)
+                      </Form.Text>
+                    </Form.Group>
+                  </Tab.Pane>
+                  <Tab.Pane eventKey="ai-api-keys">
+                    <h5 className="text-danger mb-3">AI API Keys Management</h5>
+                    <p className="text-white-50 small mb-4">
+                      Manage API keys for AI services like OpenAI, Anthropic, Google, and others for enhanced automation and analysis capabilities.
+                    </p>
+                    
+                    <Accordion className="mb-4">
+                      <Accordion.Item eventKey="0">
+                        <Accordion.Header>About AI Integration</Accordion.Header>
+                        <Accordion.Body>
+                          <p className="text-white-50 small">
+                            AI API integration enables advanced automation and analysis features:
+                          </p>
+                          <ul className="text-white-50 small">
+                            <li><strong>Automated Analysis:</strong> Use AI to analyze reconnaissance results and identify patterns</li>
+                            <li><strong>Content Generation:</strong> Generate reports, summaries, and documentation automatically</li>
+                            <li><strong>Smart Filtering:</strong> Use AI to prioritize and categorize findings</li>
+                            <li><strong>Natural Language Queries:</strong> Query your data using natural language</li>
+                            <li><strong>Enhanced Reporting:</strong> Generate executive summaries and technical reports</li>
+                          </ul>
+                          <p className="text-white-50 small">
+                            <strong>Supported Providers:</strong> OpenAI (GPT), Anthropic (Claude), Google (Gemini), Azure OpenAI, Cohere, Hugging Face, Replicate, Together AI, Perplexity, and Mistral AI.
+                          </p>
+                        </Accordion.Body>
+                      </Accordion.Item>
+                    </Accordion>
+                    
+                    <div className="mb-4">
+                      <h6 className="text-white mb-3">Add New AI API Key</h6>
+                      <Row className="mb-3">
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="text-white">AI Provider</Form.Label>
+                            <Form.Select
+                              value={newAiApiKey.provider}
+                              onChange={(e) => setNewAiApiKey(prev => ({ ...prev, provider: e.target.value }))}
+                              className="custom-input"
+                            >
+                              <option value="">Select an AI provider</option>
+                              <option value="OpenAI">OpenAI (GPT)</option>
+                              <option value="Anthropic">Anthropic (Claude)</option>
+                              <option value="Google">Google (Gemini)</option>
+                              <option value="Azure OpenAI">Azure OpenAI</option>
+                              <option value="Cohere">Cohere</option>
+                              <option value="Hugging Face">Hugging Face</option>
+                              <option value="Replicate">Replicate</option>
+                              <option value="Together AI">Together AI</option>
+                              <option value="Perplexity">Perplexity</option>
+                              <option value="Mistral AI">Mistral AI</option>
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group>
+                            <Form.Label className="text-white">Key Name</Form.Label>
+                            <Form.Control
+                              type="text"
+                              value={newAiApiKey.name}
+                              onChange={(e) => setNewAiApiKey(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="Enter a name for this API key"
+                              className="custom-input"
+                            />
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      <Row className="mb-3">
+                        {getAiKeyFieldsForProvider(newAiApiKey.provider).map((field) => (
+                          <Col key={field.name} md={field.name === 'api_key' ? 12 : 6}>
+                            <Form.Group>
+                              <Form.Label className="text-white">
+                                {field.label}
+                                {field.required && <span className="text-danger">*</span>}
+                              </Form.Label>
+                              <Form.Control
+                                type={field.type}
+                                value={getAiFieldValue(field.name)}
+                                onChange={(e) => handleAiFieldChange(field.name, e.target.value)}
+                                placeholder={`Enter ${field.label}`}
+                                className="custom-input"
+                              />
+                            </Form.Group>
+                          </Col>
+                        ))}
+                      </Row>
+                      <Button 
+                        variant="danger" 
+                        onClick={handleCreateAiApiKey}
+                        disabled={aiApiKeyLoading}
+                      >
+                        {aiApiKeyLoading ? 'Adding...' : 'Add AI API Key'}
+                      </Button>
+                    </div>
+
+                    <div className="mb-4">
+                      <h6 className="text-white mb-3">Existing AI API Keys</h6>
+                      {aiApiKeyLoading ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border text-danger" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      ) : aiApiKeys.length === 0 ? (
+                        <p className="text-white-50">No AI API keys configured yet.</p>
+                      ) : (
+                        <div className="list-group" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                          {aiApiKeys.map((aiApiKey) => (
+                            <div key={aiApiKey.id} className="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center">
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <strong className="text-danger">{aiApiKey.provider}</strong>
+                                <br />
+                                <span className="text-white">
+                                  {aiApiKey.api_key_name}: {truncateApiKey(aiApiKey.key_values.api_key)}
+                                  {aiApiKey.key_values.organization_id && (
+                                    <><br /><small className="text-white-50">Org: {truncateApiKey(aiApiKey.key_values.organization_id, 15)}</small></>
+                                  )}
+                                  {aiApiKey.key_values.project_id && (
+                                    <><br /><small className="text-white-50">Project: {truncateApiKey(aiApiKey.key_values.project_id, 15)}</small></>
+                                  )}
+                                  {aiApiKey.key_values.endpoint && (
+                                    <><br /><small className="text-white-50">Endpoint: {truncateApiKey(aiApiKey.key_values.endpoint, 30)}</small></>
+                                  )}
+                                </span>
+                                <br />
+                                <small className="text-white-50">
+                                  Added: {new Date(aiApiKey.created_at).toLocaleDateString()}
+                                </small>
+                              </div>
+                              <Button 
+                                variant="outline-danger" 
+                                size="sm"
+                                onClick={() => handleDeleteAiApiKey(aiApiKey.id)}
+                                disabled={aiApiKeyLoading}
+                                style={{ flexShrink: 0, marginLeft: '10px' }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Tab.Pane>
                 </Tab.Content>
               </Col>
             </Row>
@@ -367,9 +1211,9 @@ function SettingsModal({ show, handleClose }) {
         <Button 
           variant="danger" 
           onClick={handleSave} 
-          disabled={loading || saveSuccess}
+          disabled={loading || saving}
         >
-          {loading ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Settings'}
+          {loading ? 'Saving...' : saving ? 'Saving...' : 'Save Settings'}
         </Button>
       </Modal.Footer>
     </Modal>

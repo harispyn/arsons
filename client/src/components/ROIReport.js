@@ -1,4 +1,5 @@
-import { Modal, Container, Row, Col, Table, Badge, Card } from 'react-bootstrap';
+import { Modal, Container, Row, Col, Table, Badge, Card, Button } from 'react-bootstrap';
+import { useState } from 'react';
 
 const calculateROIScore = (targetURL) => {
   let score = 50;
@@ -367,7 +368,7 @@ const TargetSection = ({ targetURL, roiScore }) => {
                       ['NS', targetURL.dns_ns_records],
                       ['PTR', targetURL.dns_ptr_records],
                       ['SRV', targetURL.dns_srv_records]
-                    ].map(([type, records]) => records && records.length > 0 && (
+                    ].map(([type, records]) => records && Array.isArray(records) && records.length > 0 && (
                       <tr key={type}>
                         <td className="fw-bold" style={{ width: '100px' }}>{type}:</td>
                         <td>{records.join(', ')}</td>
@@ -399,7 +400,7 @@ const TargetSection = ({ targetURL, roiScore }) => {
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 <Table className="table-dark">
                   <tbody>
-                    {Object.entries(httpHeaders).map(([key, value]) => (
+                    {Object.entries(httpHeaders || {}).map(([key, value]) => (
                       <tr key={key}>
                         <td className="fw-bold" style={{ width: '150px' }}>{key}:</td>
                         <td>{typeof value === 'string' ? value : JSON.stringify(value)}</td>
@@ -430,9 +431,48 @@ const TargetSection = ({ targetURL, roiScore }) => {
 };
 
 const ROIReport = ({ show, onHide, targetURLs = [] }) => {
-  const sortedTargets = Array.isArray(targetURLs) 
-    ? [...targetURLs].sort((a, b) => b.roi_score - a.roi_score)
+  // Ensure targetURLs is always an array
+  const safeTargetURLs = targetURLs || [];
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 1;
+  const totalPages = Math.ceil((safeTargetURLs || []).length / itemsPerPage);
+  
+  const sortedTargets = Array.isArray(safeTargetURLs) 
+    ? [...safeTargetURLs].sort((a, b) => b.roi_score - a.roi_score)
     : [];
+
+  const currentTarget = sortedTargets[currentPage - 1];
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const PaginationControls = () => (
+    <div className="d-flex justify-content-between align-items-center mb-3">
+      <Button 
+        variant="outline-danger" 
+        onClick={handlePreviousPage}
+        disabled={currentPage === 1}
+      >
+        ← Previous
+      </Button>
+      <span className="text-white">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button 
+        variant="outline-danger" 
+        onClick={handleNextPage}
+        disabled={currentPage === totalPages}
+      >
+        Next →
+      </Button>
+    </div>
+  );
 
   return (
     <Modal show={show} onHide={onHide} size="xl" className="bg-dark text-white">
@@ -441,13 +481,15 @@ const ROIReport = ({ show, onHide, targetURLs = [] }) => {
       </Modal.Header>
       <Modal.Body className="bg-dark">
         <Container fluid>
-          {sortedTargets.map((target, index) => (
+          <PaginationControls />
+          {currentTarget && (
             <TargetSection 
-              key={target.id || index} 
-              targetURL={target} 
-              roiScore={target.roi_score}
+              key={currentTarget.id} 
+              targetURL={currentTarget} 
+              roiScore={currentTarget.roi_score}
             />
-          ))}
+          )}
+          <PaginationControls />
         </Container>
       </Modal.Body>
     </Modal>
