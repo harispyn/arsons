@@ -10,17 +10,12 @@ function ManageScopeTargets({
   scopeTargets, 
   getTypeIcon,
   onAutoScan,
+  onBalancedScan,
+  onFullScan,
+  onYOLOScan,
   isAutoScanning,
-  isAutoScanPaused,
-  isAutoScanPausing,
-  isAutoScanCancelling,
-  setIsAutoScanPausing,
-  setIsAutoScanCancelling,
   autoScanCurrentStep,
-  mostRecentGauScanStatus,
-  consolidatedSubdomains = [],
-  mostRecentHttpxScan,
-  onOpenAutoScanHistory
+  mostRecentGauScanStatus
 }) {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [autoScanConfig, setAutoScanConfig] = useState(null);
@@ -450,17 +445,27 @@ function ManageScopeTargets({
     return Math.min(progress, 95);
   };
 
-  // Add CSS for flashing text
-  const flashingTextStyle = `
-    @keyframes flash {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+  // Get a user-friendly name for the current scan
+  const getScanStatusText = () => {
+    if (!isAutoScanning) {
+      return "No scan running";
     }
-    .flashing-text {
-      animation: flash 1s linear infinite;
-      font-weight: bold;
+    
+    if (autoScanCurrentStep === 'idle' || !autoScanCurrentStep) {
+      return "Preparing...";
+    } else if (autoScanCurrentStep === 'completed') {
+      return "Scan Complete";
+    } else {
+      return `Running: ${formatStepName(autoScanCurrentStep)}`;
     }
-  `;
+  };
+  
+  // Get which scan button is currently active based on localStorage
+  const getActiveScanType = () => {
+    if (!isAutoScanning) return "";
+    const scanType = localStorage.getItem('autoScanType') || 'quick';
+    return scanType.charAt(0).toUpperCase() + scanType.slice(1); // Capitalize first letter
+  };
 
   return (
     <>
@@ -500,176 +505,74 @@ function ManageScopeTargets({
                     <img src={getTypeIcon(activeTarget.type)} alt={activeTarget.type} style={{ width: '30px' }} />
                   </span>
                 </Card.Text>
-                {/* Auto Scan Status Section */}
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1 w-100">
-                    <div className="d-flex flex-column">
-                      <div className="d-flex align-items-center mb-1">
-                        <span className={`fw-bold text-${displayStatus === 'running' ? 'danger' : displayStatus === 'completed' ? 'success' : 'secondary'}`}>
-                          Auto Scan Status: {displayStatus === 'running' ? 'Running' : displayStatus === 'completed' ? 'Completed' : 'Idle'}
-                        </span>
-                        {displayStatus === 'running' && <Spinner animation="border" size="sm" variant="danger" className="ms-2" />}
-                      </div>
-                      <div className="mb-1">
-                        <span className="text-white-50">Start Time: </span>
-                        <span className="text-white">{scanStartTime ? new Date(scanStartTime).toLocaleTimeString() : '--:--:-- --'}</span>
-                      </div>
-                      {isAutoScanning ? (
-                        <div className="mb-1">
-                          <span className="text-white-50">Elapsed: </span>
-                          <span className="text-white">{elapsed || '0m 00s'}</span>
-                        </div>
-                      ) : (
-                        <div className="mb-1">
-                          <span className="text-white-50">Duration: </span>
-                          <span className="text-white">{finalDuration || (scanEndTime ? '0m 00s' : '--')}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-end" style={{ minWidth: 180 }}>
-                      <div className={
-                        isAutoScanPaused && 
-                        consolidatedSubdomains.length > (autoScanConfig?.maxConsolidatedSubdomains ?? 2500) 
-                          ? "text-danger mb-2 flashing-text" 
-                          : "text-white-50 mb-2"
-                      }>
-                        Consolidated Subdomains: {consolidatedSubdomains.length} / {autoScanConfig?.maxConsolidatedSubdomains ?? 2500}
-                      </div>
-                      <div className={
-                        isAutoScanPaused && 
-                        getHttpxResultsCount(mostRecentHttpxScan) > (autoScanConfig?.maxLiveWebServers ?? 500) 
-                          ? "text-danger mb-2 flashing-text" 
-                          : "text-white-50 mb-2"
-                      }>
-                        Live Web Servers: {getHttpxResultsCount(mostRecentHttpxScan)} / {autoScanConfig?.maxLiveWebServers ?? 500}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Auto Scan Status - Always shown */}
-                  <div className="mt-3">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <div className="text-white-50 small">
-                        {displayStatus === 'running' ? (
-                          <>
-                            <span className="text-danger">●</span> Running {formatStepName(autoScanCurrentStep)}
-                          </>
-                        ) : displayStatus === 'completed' ? (
-                          <>
-                            <span className="text-success">●</span> Scan completed
-                          </>
-                        ) : displayStatus === 'paused' ? (
-                          <>
-                            <span className="text-warning">●</span> Scan paused {
-                              (isAutoScanPaused && 
-                               ((consolidatedSubdomains.length > (autoScanConfig?.maxConsolidatedSubdomains ?? 2500)) || 
-                                (getHttpxResultsCount(mostRecentHttpxScan) > (autoScanConfig?.maxLiveWebServers ?? 500)))) ? 
-                                <span className="text-warning ms-2">(Limits exceeded)</span> : 
-                                null
-                            }
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-secondary">●</span> Ready to scan
-                          </>
-                        )}
-                      </div>
-                      <div className="text-white-50 small">
-                        {scanEndTime && (
-                          <>
-                            Duration: {finalDuration}
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Progress Bar - Always shown */}
-                    <div className="mt-2">
-                      <div className="d-flex justify-content-between mb-1">
-                        <span className="text-white-50 small">Progress</span>
-                        <span className="text-white small">
-                          {displayStatus === 'idle' ? '0' : calculateProgress()}%
-                        </span>
-                      </div>
-                      <ProgressBar 
-                        now={calculateProgress()} 
-                        variant="danger" 
-                        className="bg-dark" 
-                        style={{ height: '8px' }}
-                      />
-                    </div>
-                  </div>
+                
+                {/* Status indicator - always visible */}
+                <div className="text-center mb-3">
+                  <span className="text-danger">
+                    {isAutoScanning ? `${getActiveScanType()} Scan: ${getScanStatusText()}` : "Ready to scan"}
+                  </span>
                 </div>
-                <div className="d-flex justify-content-between gap-2 mt-3">
+                {/* Man, this is shit code...  "outline-danger" : "outline-danger"  I gotta fix this in beta */}
+                <div className="d-flex justify-content-between gap-2">
                   <Button 
-                    variant="outline-danger" 
-                    className="flex-fill" 
-                    onClick={onOpenAutoScanHistory}
-                    disabled={activeTarget?.type !== 'Wildcard'}
-                  >
-                    Scan History
-                  </Button>
-                  <Button 
-                    variant="outline-danger" 
-                    className="flex-fill" 
-                    onClick={handleConfigure}
-                    disabled={activeTarget?.type !== 'Wildcard'}
-                  >
-                    Configure
-                  </Button>
-                  <Button 
-                    variant="outline-danger" 
+                    variant={isAutoScanning && getActiveScanType() === 'Quick' ? "outline-danger" : "outline-danger"}
                     className="flex-fill" 
                     onClick={onAutoScan}
-                    disabled={isAutoScanning || activeTarget?.type !== 'Wildcard'}
+                    disabled={isAutoScanning}
                   >
                     <div className="btn-content">
-                      {isAutoScanning ? (
-                        <Spinner animation="border" size="sm" variant="danger" />
-                      ) : 'Auto Scan'}
+                      {isAutoScanning && getActiveScanType() === 'Quick' ? (
+                        <>
+                          <div className="spinner"></div>
+                          {/* <span className="ms-2">Quick Scan</span> */}
+                        </>
+                      ) : 'Quick Scan'}
                     </div>
                   </Button>
-                  {isAutoScanPaused ? (
-                    <Button 
-                      variant="outline-danger" 
-                      className="flex-fill" 
-                      onClick={handlePause}
-                      disabled={!isAutoScanning || isResuming}
-                    >
-                      {isResuming ? (
-                        <div className="btn-content">
-                          <span className="me-1">Resuming</span>
-                          <Spinner animation="border" size="sm" />
-                        </div>
-                      ) : 'Resume'}
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline-danger" 
-                      className="flex-fill" 
-                      onClick={handlePause}
-                      disabled={!isAutoScanning || isAutoScanCancelling}
-                    >
-                      {isAutoScanPausing ? (
-                        <div className="btn-content">
-                          <span className="me-1">Pausing</span>
-                          <Spinner animation="border" size="sm" />
-                        </div>
-                      ) : 'Pause'}
-                    </Button>
-                  )}
                   <Button 
-                    variant="outline-danger" 
+                    variant={isAutoScanning && getActiveScanType() === 'Balanced' ? "outline-danger" : "outline-danger"}
                     className="flex-fill" 
-                    onClick={handleCancel}
-                    disabled={!isAutoScanning || isAutoScanPaused}
+                    onClick={onBalancedScan}
+                    disabled={isAutoScanning}
                   >
-                    {isAutoScanCancelling ? (
-                      <div className="btn-content">
-                        <span className="me-1">Cancelling</span>
-                        <Spinner animation="border" size="sm" />
-                      </div>
-                    ) : 'Cancel'}
+                    <div className="btn-content">
+                      {isAutoScanning && getActiveScanType() === 'Balanced' ? (
+                        <>
+                          <div className="spinner"></div>
+                          {/* <span className="ms-2">Balanced Scan</span> */}
+                        </>
+                      ) : 'Balanced Scan'}
+                    </div>
+                  </Button>
+                  <Button 
+                    variant={isAutoScanning && getActiveScanType() === 'Full' ? "outline-danger" : "outline-danger"}
+                    className="flex-fill" 
+                    onClick={onFullScan}
+                    disabled={isAutoScanning}
+                  >
+                    <div className="btn-content">
+                      {isAutoScanning && getActiveScanType() === 'Full' ? (
+                        <>
+                          <div className="spinner"></div>
+                          {/* <span className="ms-2">Full Scan</span> */}
+                        </>
+                      ) : 'Full Scan'}
+                    </div>
+                  </Button>
+                  <Button 
+                    variant={isAutoScanning && getActiveScanType() === 'Yolo' ? "outline-danger" : "outline-danger"}
+                    className="flex-fill" 
+                    onClick={onYOLOScan}
+                    disabled={isAutoScanning}
+                  >
+                    <div className="btn-content">
+                      {isAutoScanning && getActiveScanType() === 'Yolo' ? (
+                        <>
+                          <div className="spinner"></div>
+                          {/* <span className="ms-2">YOLO Scan</span> */}
+                        </>
+                      ) : 'YOLO Scan'}
+                    </div>
                   </Button>
                 </div>
               </Card.Body>

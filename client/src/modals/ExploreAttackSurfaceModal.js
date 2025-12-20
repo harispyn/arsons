@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Table, Badge, Row, Col, Alert, Nav, InputGroup } from 'react-bootstrap';
+import { Modal, Button, Form, Table, Badge, Row, Col, Alert, Nav, InputGroup, Spinner } from 'react-bootstrap';
 import fetchAttackSurfaceAssets from '../utils/fetchAttackSurfaceAssets';
 
 const ExploreAttackSurfaceModal = ({ 
@@ -15,6 +15,7 @@ const ExploreAttackSurfaceModal = ({
   const [sortDirection, setSortDirection] = useState('asc');
   const [activeTab, setActiveTab] = useState('asn');
   const [filters, setFilters] = useState([{ searchTerm: '', isNegative: false }]);
+  const [isPopulatingBurpsuite, setIsPopulatingBurpsuite] = useState(false);
 
   const assetTypes = [
     { key: 'asn', label: 'Autonomous System Numbers (ASNs)', count: 0 },
@@ -179,6 +180,50 @@ const ExploreAttackSurfaceModal = ({
     setFilters([{ searchTerm: '', isNegative: false }]);
   };
 
+  const handlePopulateBurpsuite = async () => {
+    if (activeTab !== 'live_web_server') {
+      return;
+    }
+
+    const urls = filteredAssets
+      .filter(asset => asset.asset_type === 'live_web_server' && asset.url)
+      .map(asset => asset.url);
+
+    if (urls.length === 0) {
+      setError('No live web server URLs found to populate Burpsuite');
+      return;
+    }
+
+    setIsPopulatingBurpsuite(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/burpsuite/populate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ urls }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to populate Burpsuite');
+      }
+
+      const data = await response.json();
+      console.log('Burpsuite populated successfully:', data);
+    } catch (err) {
+      console.error('Error populating Burpsuite:', err);
+      setError(`Failed to populate Burpsuite: ${err.message}`);
+    } finally {
+      setIsPopulatingBurpsuite(false);
+    }
+  };
+
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -274,7 +319,7 @@ const ExploreAttackSurfaceModal = ({
         return <span className="text-white-50">-</span>;
       case 'url':
         return (
-          <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div>
             <a href={asset.url} target="_blank" rel="noopener noreferrer" className="text-info">
               {asset.url}
             </a>
@@ -368,7 +413,7 @@ const ExploreAttackSurfaceModal = ({
                 </Badge>
               )}
               {asset.title && (
-                <div className="small text-white-50 mt-1" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div className="small text-white-50 mt-1">
                   {asset.title}
                 </div>
               )}
@@ -996,6 +1041,22 @@ const ExploreAttackSurfaceModal = ({
           )}
         </Modal.Body>
         <Modal.Footer>
+          {activeTab === 'live_web_server' && (
+            <Button
+              variant="danger"
+              onClick={handlePopulateBurpsuite}
+              disabled={isPopulatingBurpsuite || filteredAssets.filter(asset => asset.asset_type === 'live_web_server' && asset.url).length === 0}
+            >
+              {isPopulatingBurpsuite ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Populating...
+                </>
+              ) : (
+                'Populate Burpsuite'
+              )}
+            </Button>
+          )}
           <Button variant="outline-secondary" onClick={handleClose}>
             Close
           </Button>

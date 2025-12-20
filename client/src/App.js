@@ -11,7 +11,10 @@ import { SubfinderResultsModal } from './modals/subfinderModals.js';
 import { ShuffleDNSResultsModal } from './modals/shuffleDNSModals.js';
 import ScreenshotResultsModal from './modals/ScreenshotResultsModal.js';
 import SettingsModal from './modals/SettingsModal.js';
+import ToolsModal from './modals/ToolsModal.js';
 import ExportModal from './modals/ExportModal.js';
+import ImportModal from './modals/ImportModal.js';
+import WelcomeModal from './modals/WelcomeModal.js';
 import GoogleDorkingModal from './modals/GoogleDorkingModal.js';
 import Ars0nFrameworkHeader from './components/ars0nFrameworkHeader.js';
 import ManageScopeTargets from './components/manageScopeTargets.js';
@@ -29,7 +32,6 @@ import {
   Table,
   Toast,
   ToastContainer,
-  Spinner,
 } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -66,6 +68,7 @@ import consolidateSubdomains from './utils/consolidateSubdomains.js';
 import fetchConsolidatedSubdomains from './utils/fetchConsolidatedSubdomains.js';
 import consolidateCompanyDomains from './utils/consolidateCompanyDomains.js';
 import consolidateAttackSurface from './utils/consolidateAttackSurface.js';
+import investigateFQDNs from './utils/investigateFQDNs.js';
 import fetchConsolidatedCompanyDomains from './utils/fetchConsolidatedCompanyDomains.js';
 import fetchAttackSurfaceAssetCounts from './utils/fetchAttackSurfaceAssetCounts.js';
 import consolidateNetworkRanges from './utils/consolidateNetworkRanges.js';
@@ -91,76 +94,7 @@ import MetaDataModal from './modals/MetaDataModal.js';
 import fetchHttpxScans from './utils/fetchHttpxScans';
 import ROIReport from './components/ROIReport';
 import HelpMeLearn from './components/HelpMeLearn';
-import {
-  AUTO_SCAN_STEPS,
-  resumeAutoScan as resumeAutoScanUtil,
-  startAutoScan as startAutoScanUtil
-} from './utils/wildcardAutoScan';
-import getAutoScanSteps from './utils/autoScanSteps';
-import fetchAmassIntelScans from './utils/fetchAmassIntelScans';
-import monitorAmassIntelScanStatus from './utils/monitorAmassIntelScanStatus';
-import initiateAmassIntelScan from './utils/initiateAmassIntelScan';
-import initiateCTLCompanyScan from './utils/initiateCTLCompanyScan';
-import monitorCTLCompanyScanStatus from './utils/monitorCTLCompanyScanStatus';
-import { CTLCompanyResultsModal, CTLCompanyHistoryModal } from './modals/CTLCompanyResultsModal';
-import { CloudEnumResultsModal, CloudEnumHistoryModal } from './modals/CloudEnumResultsModal';
-import CloudEnumConfigModal from './modals/CloudEnumConfigModal';
-import NucleiConfigModal from './modals/NucleiConfigModal';
-import { NucleiResultsModal, NucleiHistoryModal } from './modals/NucleiResultsModal';
-import monitorMetabigorCompanyScanStatus from './utils/monitorMetabigorCompanyScanStatus';
-import initiateMetabigorCompanyScan from './utils/initiateMetabigorCompanyScan';
-import { MetabigorCompanyResultsModal, MetabigorCompanyHistoryModal } from './modals/MetabigorCompanyResultsModal';
-import APIKeysConfigModal from './modals/APIKeysConfigModal.js';
-import ReverseWhoisModal from './modals/ReverseWhoisModal.js';
-import initiateSecurityTrailsCompanyScan from './utils/initiateSecurityTrailsCompanyScan';
-import monitorSecurityTrailsCompanyScanStatus from './utils/monitorSecurityTrailsCompanyScanStatus';
-import { SecurityTrailsCompanyResultsModal, SecurityTrailsCompanyHistoryModal } from './modals/SecurityTrailsCompanyResultsModal';
-import { CensysCompanyResultsModal, CensysCompanyHistoryModal } from './modals/CensysCompanyResultsModal';
-import initiateCensysCompanyScan from './utils/initiateCensysCompanyScan';
-import monitorCensysCompanyScanStatus from './utils/monitorCensysCompanyScanStatus';
-import initiateGitHubReconScan from './utils/initiateGitHubReconScan';
-import monitorGitHubReconScanStatus from './utils/monitorGitHubReconScanStatus';
-import { GitHubReconResultsModal, GitHubReconHistoryModal } from './modals/GitHubReconResultsModal';
-import { ShodanCompanyResultsModal, ShodanCompanyHistoryModal } from './modals/ShodanCompanyResultsModal';
-import monitorShodanCompanyScanStatus from './utils/monitorShodanCompanyScanStatus.js';
-import initiateShodanCompanyScan from './utils/initiateShodanCompanyScan';
-import AddWildcardTargetsModal from './modals/AddWildcardTargetsModal.js';
-import ExploreAttackSurfaceModal from './modals/ExploreAttackSurfaceModal.js';
-import initiateInvestigateScan from './utils/initiateInvestigateScan';
-import monitorInvestigateScanStatus from './utils/monitorInvestigateScanStatus';
-import TrimRootDomainsModal from './modals/TrimRootDomainsModal.js';
-import TrimNetworkRangesModal from './modals/TrimNetworkRangesModal.js';
-import LiveWebServersResultsModal from './modals/LiveWebServersResultsModal.js';
-import AmassEnumConfigModal from './modals/AmassEnumConfigModal.js';
-import AmassIntelConfigModal from './modals/AmassIntelConfigModal.js';
-import DNSxConfigModal from './modals/DNSxConfigModal.js';
-import fetchMetabigorCompanyScans from './utils/fetchMetabigorCompanyScans';
-
-import monitorIPPortScanStatus from './utils/monitorIPPortScanStatus';
-import initiateIPPortScan from './utils/initiateIPPortScan';
-import fetchIPPortScans from './utils/fetchIPPortScans';
-
-import { AmassEnumCompanyResultsModal } from './modals/AmassEnumCompanyResultsModal.js';
-import { AmassEnumCompanyHistoryModal } from './modals/AmassEnumCompanyHistoryModal.js';
-import { initiateAmassEnumCompanyScan } from './utils/initiateAmassEnumCompanyScan.js';
-
-// Add DNSx imports
-import { DNSxCompanyResultsModal } from './modals/DNSxCompanyResultsModal.js';
-import { DNSxCompanyHistoryModal } from './modals/DNSxCompanyHistoryModal.js';
-import { initiateDNSxCompanyScan } from './utils/initiateDNSxCompanyScan.js';
-
-// Add Katana Company imports
-import KatanaCompanyConfigModal from './modals/KatanaCompanyConfigModal.js';
-import KatanaCompanyResultsModal from './modals/KatanaCompanyResultsModal.js';
-import { KatanaCompanyHistoryModal } from './modals/KatanaCompanyHistoryModal.js';
-import { initiateKatanaCompanyScan } from './utils/initiateKatanaCompanyScan.js';
-
-// Add Cloud Enum imports
-import initiateCloudEnumScan from './utils/initiateCloudEnumScan';
-import monitorCloudEnumScanStatus from './utils/monitorCloudEnumScanStatus';
-
-// Add Attack Surface Visualization import
-import AttackSurfaceVisualizationModal from './modals/AttackSurfaceVisualizationModal.js';
+import { startAutoScan, waitForScanCompletion, AUTO_SCAN_STEPS, SCAN_TYPES, debugTrace } from './utils/wildcardAutoScan';
 
 // Add helper function
 const getHttpxResultsCount = (scan) => {
@@ -322,6 +256,8 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [showActiveModal, setShowActiveModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [selections, setSelections] = useState({
     type: '',
     inputText: '',
@@ -396,6 +332,7 @@ function App() {
   const [consolidatedNetworkRangesCount, setConsolidatedNetworkRangesCount] = useState(0);
   const [isConsolidatingNetworkRanges, setIsConsolidatingNetworkRanges] = useState(false);
   const [isConsolidatingAttackSurface, setIsConsolidatingAttackSurface] = useState(false);
+  const [isInvestigatingFQDNs, setIsInvestigatingFQDNs] = useState(false);
   const [consolidatedAttackSurfaceResult, setConsolidatedAttackSurfaceResult] = useState(null);
   const [attackSurfaceASNsCount, setAttackSurfaceASNsCount] = useState(0);
   const [attackSurfaceNetworkRangesCount, setAttackSurfaceNetworkRangesCount] = useState(0);
@@ -436,153 +373,17 @@ function App() {
   const [shuffleDNSCustomScans, setShuffleDNSCustomScans] = useState([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isAutoScanning, setIsAutoScanning] = useState(false);
-  const [autoScanCurrentStep, setAutoScanCurrentStep] = useState(AUTO_SCAN_STEPS.IDLE);
-  const [autoScanTargetId, setAutoScanTargetId] = useState(null);
-  const [autoScanSessionId, setAutoScanSessionId] = useState(null);
-  const [showAutoScanHistoryModal, setShowAutoScanHistoryModal] = useState(false);
-  const [autoScanSessions, setAutoScanSessions] = useState([]);
-  // Add these state variables near the other auto scan related states
-  const [isAutoScanPaused, setIsAutoScanPaused] = useState(false);
-  const [isAutoScanPausing, setIsAutoScanPausing] = useState(false);
-  const [isAutoScanCancelling, setIsAutoScanCancelling] = useState(false);
-  const [ctlCompanyScans, setCTLCompanyScans] = useState([]);
-  const [mostRecentCTLCompanyScanStatus, setMostRecentCTLCompanyScanStatus] = useState(null);
-  const [mostRecentCTLCompanyScan, setMostRecentCTLCompanyScan] = useState(null);
-  const [isCTLCompanyScanning, setIsCTLCompanyScanning] = useState(false);
-  const [showCTLCompanyResultsModal, setShowCTLCompanyResultsModal] = useState(false);
-  const [showCTLCompanyHistoryModal, setShowCTLCompanyHistoryModal] = useState(false);
-  const [metabigorCompanyScans, setMetabigorCompanyScans] = useState([]);
-  const [mostRecentMetabigorCompanyScanStatus, setMostRecentMetabigorCompanyScanStatus] = useState(null);
-  const [mostRecentMetabigorCompanyScan, setMostRecentMetabigorCompanyScan] = useState(null);
-  const [isMetabigorCompanyScanning, setIsMetabigorCompanyScanning] = useState(false);
-  const [showMetabigorCompanyResultsModal, setShowMetabigorCompanyResultsModal] = useState(false);
-  const [showMetabigorCompanyHistoryModal, setShowMetabigorCompanyHistoryModal] = useState(false);
-  const [googleDorkingScans, setGoogleDorkingScans] = useState([]);
-  const [mostRecentGoogleDorkingScanStatus, setMostRecentGoogleDorkingScanStatus] = useState(null);
-  const [mostRecentGoogleDorkingScan, setMostRecentGoogleDorkingScan] = useState(null);
-  const [isGoogleDorkingScanning, setIsGoogleDorkingScanning] = useState(false);
-  const [showGoogleDorkingResultsModal, setShowGoogleDorkingResultsModal] = useState(false);
-  const [showGoogleDorkingHistoryModal, setShowGoogleDorkingHistoryModal] = useState(false);
-  const [showGoogleDorkingManualModal, setShowGoogleDorkingManualModal] = useState(false);
-  const [googleDorkingDomains, setGoogleDorkingDomains] = useState([]);
-  const [googleDorkingError, setGoogleDorkingError] = useState('');
-  const [showAPIKeysConfigModal, setShowAPIKeysConfigModal] = useState(false);
-  const [settingsModalInitialTab, setSettingsModalInitialTab] = useState('rate-limits');
-  const [showReverseWhoisResultsModal, setShowReverseWhoisResultsModal] = useState(false);
-  const [showReverseWhoisManualModal, setShowReverseWhoisManualModal] = useState(false);
-  const [reverseWhoisDomains, setReverseWhoisDomains] = useState([]);
-  const [reverseWhoisError, setReverseWhoisError] = useState('');
-  const [securityTrailsCompanyScans, setSecurityTrailsCompanyScans] = useState([]);
-  const [mostRecentSecurityTrailsCompanyScan, setMostRecentSecurityTrailsCompanyScan] = useState(null);
-  const [mostRecentSecurityTrailsCompanyScanStatus, setMostRecentSecurityTrailsCompanyScanStatus] = useState(null);
-  const [isSecurityTrailsCompanyScanning, setIsSecurityTrailsCompanyScanning] = useState(false);
-  const [showSecurityTrailsCompanyResultsModal, setShowSecurityTrailsCompanyResultsModal] = useState(false);
-  // Add state for history modal
-  const [showSecurityTrailsCompanyHistoryModal, setShowSecurityTrailsCompanyHistoryModal] = useState(false);
-  const [hasSecurityTrailsApiKey, setHasSecurityTrailsApiKey] = useState(false);
-  const [showCensysCompanyResultsModal, setShowCensysCompanyResultsModal] = useState(false);
-  const [showCensysCompanyHistoryModal, setShowCensysCompanyHistoryModal] = useState(false);
-  const [censysCompanyScans, setCensysCompanyScans] = useState([]);
-  const [mostRecentCensysCompanyScan, setMostRecentCensysCompanyScan] = useState(null);
-  const [mostRecentCensysCompanyScanStatus, setMostRecentCensysCompanyScanStatus] = useState(null);
-  const [isCensysCompanyScanning, setIsCensysCompanyScanning] = useState(false);
-  const [hasCensysApiKey, setHasCensysApiKey] = useState(false);
-  const [showGitHubReconResultsModal, setShowGitHubReconResultsModal] = useState(false);
-  const [showGitHubReconHistoryModal, setShowGitHubReconHistoryModal] = useState(false);
-  const [gitHubReconScans, setGitHubReconScans] = useState([]);
-  const [mostRecentGitHubReconScan, setMostRecentGitHubReconScan] = useState(null);
-  const [mostRecentGitHubReconScanStatus, setMostRecentGitHubReconScanStatus] = useState(null);
-  const [isGitHubReconScanning, setIsGitHubReconScanning] = useState(false);
-  const [hasGitHubApiKey, setHasGitHubApiKey] = useState(false);
-  const [showShodanCompanyResultsModal, setShowShodanCompanyResultsModal] = useState(false);
-  const [showShodanCompanyHistoryModal, setShowShodanCompanyHistoryModal] = useState(false);
-  const [shodanCompanyScans, setShodanCompanyScans] = useState([]);
-  const [mostRecentShodanCompanyScan, setMostRecentShodanCompanyScan] = useState(null);
-  const [mostRecentShodanCompanyScanStatus, setMostRecentShodanCompanyScanStatus] = useState(null);
-  const [isShodanCompanyScanning, setIsShodanCompanyScanning] = useState(false);
-  const [hasShodanApiKey, setHasShodanApiKey] = useState(false);
-  const [showAddWildcardTargetsModal, setShowAddWildcardTargetsModal] = useState(false);
-  const [showTrimRootDomainsModal, setShowTrimRootDomainsModal] = useState(false);
-  const [showTrimNetworkRangesModal, setShowTrimNetworkRangesModal] = useState(false);
-  const [rootDomainsByTool, setRootDomainsByTool] = useState({});
-  const [showLiveWebServersResultsModal, setShowLiveWebServersResultsModal] = useState(false);
-  const [showAmassEnumConfigModal, setShowAmassEnumConfigModal] = useState(false);
-  const [amassEnumSelectedDomainsCount, setAmassEnumSelectedDomainsCount] = useState(0);
-  const [amassEnumScannedDomainsCount, setAmassEnumScannedDomainsCount] = useState(0);
+  const [autoScanCurrentStep, setAutoScanCurrentStep] = useState(localStorage.getItem('autoScanCurrentStep') || AUTO_SCAN_STEPS.IDLE);
+  const [autoScanTargetId, setAutoScanTargetId] = useState(localStorage.getItem('autoScanTargetId') || null);
 
-  const [amassEnumWildcardDomainsCount, setAmassEnumWildcardDomainsCount] = useState(0);
-  const [showAmassEnumCompanyResultsModal, setShowAmassEnumCompanyResultsModal] = useState(false);
-  const [showAmassEnumCompanyHistoryModal, setShowAmassEnumCompanyHistoryModal] = useState(false);
-  const [amassEnumCompanyScans, setAmassEnumCompanyScans] = useState([]);
-  const [mostRecentAmassEnumCompanyScan, setMostRecentAmassEnumCompanyScan] = useState(null);
-  const [mostRecentAmassEnumCompanyScanStatus, setMostRecentAmassEnumCompanyScanStatus] = useState(null);
-  const [isAmassEnumCompanyScanning, setIsAmassEnumCompanyScanning] = useState(false);
-  const [amassEnumCompanyCloudDomains, setAmassEnumCompanyCloudDomains] = useState([]);
-  const [showAmassIntelConfigModal, setShowAmassIntelConfigModal] = useState(false);
-  const [amassIntelSelectedNetworkRangesCount, setAmassIntelSelectedNetworkRangesCount] = useState(0);
-  const [showDNSxConfigModal, setShowDNSxConfigModal] = useState(false);
-  // Removed unused DNSx wildcard targets variable - replaced with domains count below
-  const [ipPortScans, setIPPortScans] = useState([]);
-  const [mostRecentIPPortScan, setMostRecentIPPortScan] = useState(null);
-  const [mostRecentIPPortScanStatus, setMostRecentIPPortScanStatus] = useState(null);
-  const [isIPPortScanning, setIsIPPortScanning] = useState(false);
-  const [MetaDataScans, setMetaDataScans] = useState([]);
-  const [mostRecentMetaDataScanStatus, setMostRecentMetaDataScanStatus] = useState(null);
-  const [mostRecentMetaDataScan, setMostRecentMetaDataScan] = useState(null);
-  const [isMetaDataScanning, setIsMetaDataScanning] = useState(false);
-  const [showMetaDataModal, setShowMetaDataModal] = useState(false);
-  const [companyMetaDataScans, setCompanyMetaDataScans] = useState([]);
-  const [mostRecentCompanyMetaDataScanStatus, setMostRecentCompanyMetaDataScanStatus] = useState(null);
-  const [mostRecentCompanyMetaDataScan, setMostRecentCompanyMetaDataScan] = useState(null);
-  const [isCompanyMetaDataScanning, setIsCompanyMetaDataScanning] = useState(false);
-  const [companyMetaDataResults, setCompanyMetaDataResults] = useState([]);
-
-  // DNSx Company scan state variables
-  const [dnsxSelectedDomainsCount, setDnsxSelectedDomainsCount] = useState(0);
-  const [dnsxScannedDomainsCount, setDnsxScannedDomainsCount] = useState(0);
-
-  const [dnsxWildcardDomainsCount, setDnsxWildcardDomainsCount] = useState(0);
-  const [showDNSxCompanyResultsModal, setShowDNSxCompanyResultsModal] = useState(false);
-  const [showDNSxCompanyHistoryModal, setShowDNSxCompanyHistoryModal] = useState(false);
-  const [dnsxCompanyScans, setDnsxCompanyScans] = useState([]);
-  const [mostRecentDNSxCompanyScan, setMostRecentDNSxCompanyScan] = useState(null);
-  const [mostRecentDNSxCompanyScanStatus, setMostRecentDNSxCompanyScanStatus] = useState(null);
-  const [isDNSxCompanyScanning, setIsDNSxCompanyScanning] = useState(false);
-  const [dnsxCompanyDnsRecords, setDnsxCompanyDnsRecords] = useState([]);
-
-  const [cloudEnumScans, setCloudEnumScans] = useState([]);
-  const [mostRecentCloudEnumScanStatus, setMostRecentCloudEnumScanStatus] = useState(null);
-  const [mostRecentCloudEnumScan, setMostRecentCloudEnumScan] = useState(null);
-  const [isCloudEnumScanning, setIsCloudEnumScanning] = useState(false);
-  const [showCloudEnumResultsModal, setShowCloudEnumResultsModal] = useState(false);
-  const [showCloudEnumHistoryModal, setShowCloudEnumHistoryModal] = useState(false);
-  const [showCloudEnumConfigModal, setShowCloudEnumConfigModal] = useState(false);
-  const [showNucleiConfigModal, setShowNucleiConfigModal] = useState(false);
-  const [nucleiScans, setNucleiScans] = useState([]);
-  const [mostRecentNucleiScan, setMostRecentNucleiScan] = useState(null);
-  const [mostRecentNucleiScanStatus, setMostRecentNucleiScanStatus] = useState(null);
-  const [isNucleiScanning, setIsNucleiScanning] = useState(false);
-  const [nucleiConfig, setNucleiConfig] = useState(null);
-  const [showNucleiResultsModal, setShowNucleiResultsModal] = useState(false);
-  const [showNucleiHistoryModal, setShowNucleiHistoryModal] = useState(false);
-  const [activeNucleiScan, setActiveNucleiScan] = useState(null);
-
-  // Katana Company state variables
-  const [katanaCompanyScans, setKatanaCompanyScans] = useState([]);
-  const [mostRecentKatanaCompanyScanStatus, setMostRecentKatanaCompanyScanStatus] = useState(null);
-  const [mostRecentKatanaCompanyScan, setMostRecentKatanaCompanyScan] = useState(null);
-  const [isKatanaCompanyScanning, setIsKatanaCompanyScanning] = useState(false);
-  const [showKatanaCompanyResultsModal, setShowKatanaCompanyResultsModal] = useState(false);
-  const [showKatanaCompanyHistoryModal, setShowKatanaCompanyHistoryModal] = useState(false);
-  const [showKatanaCompanyConfigModal, setShowKatanaCompanyConfigModal] = useState(false);
-  const [showExploreAttackSurfaceModal, setShowExploreAttackSurfaceModal] = useState(false);
-  const [showAttackSurfaceVisualizationModal, setShowAttackSurfaceVisualizationModal] = useState(false);
-  const [katanaCompanyCloudAssets, setKatanaCompanyCloudAssets] = useState([]);
-  
   const handleCloseSubdomainsModal = () => setShowSubdomainsModal(false);
   const handleCloseCloudDomainsModal = () => setShowCloudDomainsModal(false);
   const handleCloseUniqueSubdomainsModal = () => setShowUniqueSubdomainsModal(false);
   const handleCloseMetaDataModal = () => setShowMetaDataModal(false);
+  const handleCloseToolsModal = () => {
+    setShowToolsModal(false);
+  };
+
   const handleCloseSettingsModal = () => {
     setShowSettingsModal(false);
     const checkApiKeys = async () => {
@@ -1264,7 +1065,7 @@ function App() {
   useEffect(() => {
     if (activeTarget && (
       mostRecentAmassScanStatus === 'success' ||
-      mostRecentSublist3rScanStatus === 'completed' ||
+      mostRecentSublist3rScanStatus === 'success' ||
       mostRecentAssetfinderScanStatus === 'success' ||
       mostRecentGauScanStatus === 'success' ||
       mostRecentCTLScanStatus === 'success' ||
@@ -1289,13 +1090,154 @@ function App() {
 
   // Add a useEffect to resume an in-progress Auto Scan after page refresh
   useEffect(() => {
-    if (activeTarget && activeTarget.id) {
-      // Fetch the current step from the API
-      const fetchAndCheckAutoScanState = async () => {
+    const storedStep = localStorage.getItem('autoScanCurrentStep');
+    const storedTargetId = localStorage.getItem('autoScanTargetId');
+    const storedScanType = localStorage.getItem('autoScanType') || SCAN_TYPES.QUICK;
+    
+    if (storedStep && storedStep !== AUTO_SCAN_STEPS.IDLE && storedStep !== AUTO_SCAN_STEPS.COMPLETED && storedTargetId) {
+      console.log(`Detected in-progress Auto Scan (step: ${storedStep}, type: ${storedScanType}). Attempting to resume...`);
+      
+      if (!scopeTargets || scopeTargets.length === 0) {
+        console.log('Scope targets not loaded yet, waiting...');
+        return;
+      }
+      
+      const matchingTarget = scopeTargets.find(target => target.id === storedTargetId);
+      
+      if (matchingTarget) {
+        if (matchingTarget.id === activeTarget?.id) {
+          console.log(`Matching target found and is active. Resuming scan from step ${storedStep}`);
+          setIsAutoScanning(true);
+          resumeAutoScan(storedStep, storedScanType);
+        } else {
+          console.log(`Target found but not active. Active target ID: ${activeTarget?.id}, Stored target ID: ${storedTargetId}`);
+          // Don't clear localStorage here so it can resume when the right target becomes active
+        }
+      } else {
+        console.log(`No matching target found for ID: ${storedTargetId}`);
+        localStorage.removeItem('autoScanCurrentStep');
+        localStorage.removeItem('autoScanTargetId');
+        localStorage.removeItem('autoScanType');
+        setAutoScanCurrentStep(AUTO_SCAN_STEPS.IDLE);
+        setAutoScanTargetId(null);
+      }
+    }
+  }, [activeTarget, scopeTargets, isAutoScanning]);
+  
+  // Add a second useEffect to watch for localStorage changes during scanning
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'autoScanCurrentStep' || event.key === 'autoScanTargetId' || event.key === 'autoScanType') {
+        console.log(`Local storage changed: ${event.key} = ${event.newValue}`);
+        
+        if (event.key === 'autoScanCurrentStep') {
+          setAutoScanCurrentStep(event.newValue);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const resumeAutoScan = async (fromStep, scanType = SCAN_TYPES.QUICK) => {
+    if (!activeTarget) {
+      console.log("Cannot resume scan: no active target");
+      setIsAutoScanning(false);
+      return;
+    }
+        
+    try {
+      let startFromIndex = 0;
+      const steps = getAutoScanSteps();
+      for (let i = 0; i < steps.length; i++) {
+        if (steps[i].name === fromStep) {
+          startFromIndex = i;
+          break;
+        }
+      }
+      
+      console.log(`Resuming ${scanType.toUpperCase()} scan from step ${fromStep}`);
+      
+      // Determine which steps to run based on scan type (for future implementation)
+      let stepsToRun = steps.slice(startFromIndex);
+      
+      // In the future, we'll filter steps based on scan type
+      // For now, execute all remaining steps from the current position
+      debugTrace(`Resuming ${scanType.toUpperCase()} scan from step ${fromStep} (index ${startFromIndex}), will run ${stepsToRun.length} steps`);
+      
+      // Execute steps from the determined starting point
+      for (let i = 0; i < stepsToRun.length; i++) {
         try {
-          // First check if there's an active session for this target
-          const sessionResponse = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/auto-scan/sessions?target_id=${activeTarget.id}`
+          console.log(`Executing resumed ${scanType.toUpperCase()} scan step ${i+1}/${stepsToRun.length}: ${stepsToRun[i].name}`);
+          
+          // Update the current step in localStorage
+          setAutoScanCurrentStep(stepsToRun[i].name);
+          localStorage.setItem('autoScanCurrentStep', stepsToRun[i].name);
+          
+          await stepsToRun[i].action();
+        } catch (error) {
+          debugTrace(`Error in step ${i+1}/${stepsToRun.length}: ${error.message}`);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+    } catch (error) {
+      debugTrace(`Error resuming ${scanType.toUpperCase()} scan: ${error.message}`);
+    } finally {
+      setIsAutoScanning(false);
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.COMPLETED);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.COMPLETED);
+      console.log(`${scanType.toUpperCase()} scan completed`);
+    }
+  };
+
+  const getAutoScanSteps = () => [
+    { name: AUTO_SCAN_STEPS.SUBLIST3R, action: async () => {
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.SUBLIST3R);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.SUBLIST3R);
+      
+      try {
+        const domain = activeTarget.scope_target.replace('*.', '');
+        const scanResponse = await fetch(
+          `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/sublist3r/run`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fqdn: domain
+            }),
+          }
+        );
+        
+        if (!scanResponse.ok) {
+          throw new Error(`Failed to start Sublist3r scan: ${scanResponse.status} ${scanResponse.statusText}`);
+        }
+        
+        const scanData = await scanResponse.json();
+        
+        const placeholderScan = {
+          id: scanData.scan_id,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        };
+        setMostRecentSublist3rScan(placeholderScan);
+        setMostRecentSublist3rScanStatus('pending');
+        
+        let isComplete = false;
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minute timeout (60 x 5 seconds)
+        
+        while (!isComplete && attempts < maxAttempts) {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          
+          
+          const statusResponse = await fetch(
+            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/sublist3r`
           );
           
           if (sessionResponse.ok) {
@@ -1328,17 +1270,116 @@ function App() {
         } catch (error) {
           console.error('Error checking auto scan state:', error);
         }
-      };
+        
+        if (!isComplete) {
+          debugTrace("Sublist3r scan timed out, moving to next step anyway");
+        }
+        
+        setIsSublist3rScanning(false);
+        
+        return { success: true };
+      } catch (error) {
+        debugTrace(`Error with Sublist3r scan: ${error.message}`);
+        setIsSublist3rScanning(false);
+        return { success: false, error: error.message };
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.ASSETFINDER, action: async () => {
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.ASSETFINDER);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.ASSETFINDER);
       
-      fetchAndCheckAutoScanState();
-    }
-  }, []);
-
-  const resumeAutoScan = async (fromStep) => {
-    resumeAutoScanUtil(
-      fromStep,
-      activeTarget,
-      () => getAutoScanSteps(
+      setIsAssetfinderScanning(true);
+      
+      try {
+        debugTrace("Initiating Assetfinder scan directly via API...");
+        
+        // 1. Start the scan
+        const domain = activeTarget.scope_target.replace('*.', '');
+        const scanResponse = await fetch(
+          `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/assetfinder/run`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fqdn: domain
+            }),
+          }
+        );
+        
+        if (!scanResponse.ok) {
+          throw new Error(`Failed to start Assetfinder scan: ${scanResponse.status} ${scanResponse.statusText}`);
+        }
+        
+        const scanData = await scanResponse.json();
+        
+        // Create a placeholder scan object to update UI immediately
+        const placeholderScan = {
+          id: scanData.scan_id,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        };
+        setMostRecentAssetfinderScan(placeholderScan);
+        setMostRecentAssetfinderScanStatus('pending');
+        
+        let isComplete = false;
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minute timeout (60 x 5 seconds)
+        
+        while (!isComplete && attempts < maxAttempts) {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                    
+          const statusResponse = await fetch(
+            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/assetfinder`
+          );
+          
+          if (!statusResponse.ok) {
+            debugTrace(`Failed to fetch scan status: ${statusResponse.status} ${statusResponse.statusText}`);
+            continue; // Try again
+          }
+          
+          const scans = await statusResponse.json();
+          
+          if (!scans || !Array.isArray(scans) || scans.length === 0) {
+            debugTrace("No scans found, will try again");
+            continue;
+          }
+          
+          const mostRecentScan = scans.reduce((latest, scan) => {
+            const scanDate = new Date(scan.created_at);
+            return scanDate > new Date(latest.created_at) ? scan : latest;
+          }, scans[0]);
+                    
+          setMostRecentAssetfinderScan(mostRecentScan);
+          setMostRecentAssetfinderScanStatus(mostRecentScan.status);
+          
+          if (mostRecentScan.status === 'completed' || mostRecentScan.status === 'success' || mostRecentScan.status === 'failed') {
+            isComplete = true;
+            setIsAssetfinderScanning(false);
+          }
+        }
+        
+        if (!isComplete) {
+          debugTrace("Assetfinder scan timed out, moving to next step anyway");
+        }
+        
+        setIsAssetfinderScanning(false);
+        
+        return { success: true };
+      } catch (error) {
+        debugTrace(`Error with Assetfinder scan: ${error.message}`);
+        setIsAssetfinderScanning(false);
+        return { success: false, error: error.message };
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.GAU, action: async () => {
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.GAU);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.GAU);
+      
+      try {
+        await initiateGauScan(
           activeTarget,
         setAutoScanCurrentStep,
         // Scanning states
@@ -1346,15 +1387,138 @@ function App() {
         setIsSublist3rScanning,
         setIsAssetfinderScanning,
           setIsGauScanning,
+          setMostRecentGauScanStatus
+        );
+        console.log("GAU scan completed");
+      } catch (error) {
+        console.error("Error with GAU scan:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.CTL, action: async () => {
+      console.log("Starting CTL scan...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.CTL);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.CTL);
+      
+      try {
+        await initiateCTLScan(
+          activeTarget,
+          null,
           setIsCTLScanning,
+          setCTLScans,
+          setMostRecentCTLScanStatus,
+          setMostRecentCTLScan
+        );
+        
+        await waitForScanCompletion(
+          'ctl',
+          activeTarget.id,
+          setIsCTLScanning,
+          setMostRecentCTLScanStatus
+        );
+        console.log("CTL scan completed");
+      } catch (error) {
+        console.error("Error with CTL scan:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.SUBFINDER, action: async () => {
+      console.log("Starting Subfinder scan...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.SUBFINDER);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.SUBFINDER);
+      
+      try {
+        await initiateSubfinderScan(
+          activeTarget,
+          null,
           setIsSubfinderScanning,
-        setIsConsolidating,
+          setSubfinderScans,
+          setMostRecentSubfinderScanStatus,
+          setMostRecentSubfinderScan
+        );
+        
+        await waitForScanCompletion(
+          'subfinder',
+          activeTarget.id,
+          setIsSubfinderScanning,
+          setMostRecentSubfinderScanStatus
+        );
+        console.log("Subfinder scan completed");
+      } catch (error) {
+        console.error("Error with Subfinder scan:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.CONSOLIDATE, action: async () => {
+      console.log("Starting Consolidation process...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.CONSOLIDATE);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.CONSOLIDATE);
+      
+      try {
+        await handleConsolidate();
+        console.log("Consolidation completed");
+      } catch (error) {
+        console.error("Error during Consolidation:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.HTTPX, action: async () => {
+      console.log("Starting HTTPX scan for Live Web Servers...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.HTTPX);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.HTTPX);
+      
+      try {
+        await initiateHttpxScan(
+          activeTarget,
+          null,
           setIsHttpxScanning,
-        setIsShuffleDNSScanning,
-        setIsCeWLScanning,
-        setIsGoSpiderScanning,
-        setIsSubdomainizerScanning,
+          setHttpxScans,
+          setMostRecentHttpxScanStatus,
+          setMostRecentHttpxScan
+        );
+        
+        await waitForScanCompletion(
+          'httpx',
+          activeTarget.id,
+          setIsHttpxScanning,
+          setMostRecentHttpxScanStatus
+        );
+        console.log("HTTPX scan completed");
+      } catch (error) {
+        console.error("Error with HTTPX scan:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.NUCLEI_SCREENSHOT, action: async () => {
+      console.log("Starting Nuclei Screenshot scan...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.NUCLEI_SCREENSHOT);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.NUCLEI_SCREENSHOT);
+      
+      try {
+        await initiateNucleiScreenshotScan(
+          activeTarget,
+          null,
           setIsNucleiScreenshotScanning,
+          setNucleiScreenshotScans,
+          setMostRecentNucleiScreenshotScanStatus,
+          setMostRecentNucleiScreenshotScan
+        );
+        
+        await waitForScanCompletion(
+          'nuclei-screenshot',
+          activeTarget.id,
+          setIsNucleiScreenshotScanning,
+          setMostRecentNucleiScreenshotScanStatus
+        );
+        console.log("Nuclei Screenshot scan completed");
+      } catch (error) {
+        console.error("Error with Nuclei Screenshot scan:", error);
+      }
+    }},
+    { name: AUTO_SCAN_STEPS.METADATA, action: async () => {
+      console.log("Starting Metadata scan...");
+      setAutoScanCurrentStep(AUTO_SCAN_STEPS.METADATA);
+      localStorage.setItem('autoScanCurrentStep', AUTO_SCAN_STEPS.METADATA);
+      
+      try {
+        await initiateMetaDataScan(
+          activeTarget,
+          null,
           setIsMetaDataScanning,
         // Scans state updaters
         setAmassScans,
@@ -1656,7 +1820,7 @@ function App() {
           }
         }
       } else {
-        setShowModal(true);
+        setShowWelcomeModal(true);
       }
     } catch (error) {
       console.error('Error fetching scope targets:', error);
@@ -1910,154 +2074,200 @@ function App() {
     initiateAmassScan(activeTarget, monitorScanStatus, setIsScanning, setAmassScans, setMostRecentAmassScanStatus, setDnsRecords, setSubdomains, setCloudDomains, setMostRecentAmassScan)
   }
 
-  const startAmassIntelScan = () => {
-    initiateAmassIntelScan(activeTarget, monitorAmassIntelScanStatus, setIsAmassIntelScanning, setAmassIntelScans, setMostRecentAmassIntelScanStatus, setMostRecentAmassIntelScan, setAmassIntelNetworkRanges)
-  }
-
-  const handleOpenAmassIntelResultsModal = () => setShowAmassIntelResultsModal(true);
-  const handleCloseAmassIntelResultsModal = () => setShowAmassIntelResultsModal(false);
-  
-  const handleOpenAmassIntelHistoryModal = () => setShowAmassIntelHistoryModal(true);
-  const handleCloseAmassIntelHistoryModal = () => setShowAmassIntelHistoryModal(false);
-
-  const startAutoScan = async () => {
-    console.log('[AutoScan] Starting Auto Scan. Fetching config from backend...');
-    
-    // Reset all scan-related states to avoid state persistence between scans
-    setAutoScanCurrentStep(AUTO_SCAN_STEPS.IDLE);
-    setIsAutoScanning(false);
-    setIsAutoScanPaused(false);
-    setIsAutoScanPausing(false);
-    setIsAutoScanCancelling(false);
-    
-    // Only reset consolidation state, not the actual subdomains
-    setIsConsolidating(false);
-    
-    // Reset individual scan states
-    setIsScanning(false);
-    setIsSublist3rScanning(false);
-    setIsAssetfinderScanning(false);
-    setIsGauScanning(false);
-    setIsCTLScanning(false);
-    setIsSubfinderScanning(false);
-    setIsHttpxScanning(false);
-    setIsShuffleDNSScanning(false);
-    setIsCeWLScanning(false);
-    setIsGoSpiderScanning(false);
-    setIsSubdomainizerScanning(false);
-    setIsNucleiScreenshotScanning(false);
-    setIsMetaDataScanning(false);
-    
-    // Add a small delay to ensure state is fully reset
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/auto-scan-config`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch auto scan config');
-      }
-      const config = await response.json();
-      console.log('[AutoScan] Config received from backend:', config);
-      // Create session
-      const sessionResp = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/auto-scan/session/start`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            scope_target_id: activeTarget.id,
-            config_snapshot: config
-          })
-        }
-      );
-      if (!sessionResp.ok) throw new Error('Failed to create auto scan session');
-      const sessionData = await sessionResp.json();
-      console.error(sessionData)
-      setAutoScanSessionId(sessionData.session_id);
-      
-      // Now set isAutoScanning to true after all resets and config fetching
-      setIsAutoScanning(true);
-      
-      startAutoScanUtil(
-        activeTarget,
-        setIsAutoScanning,
-        setAutoScanCurrentStep,
-        setAutoScanTargetId,
-        () => getAutoScanSteps(
-          activeTarget,
-          setAutoScanCurrentStep,
-          setIsScanning,
-          setIsSublist3rScanning,
-          setIsAssetfinderScanning,
-          setIsGauScanning,
-          setIsCTLScanning,
-          setIsSubfinderScanning,
-          setIsConsolidating,
-          setIsHttpxScanning,
-          setIsShuffleDNSScanning,
-          setIsCeWLScanning,
-          setIsGoSpiderScanning,
-          setIsSubdomainizerScanning,
-          setIsNucleiScreenshotScanning,
-          setIsMetaDataScanning,
-          setAmassScans,
-          setSublist3rScans,
-          setAssetfinderScans,
-          setGauScans,
-          setCTLScans,
-          setSubfinderScans,
-          setHttpxScans,
-          setShuffleDNSScans,
-          setCeWLScans,
-          setGoSpiderScans,
-          setSubdomainizerScans,
-          setNucleiScreenshotScans,
-          setMetaDataScans,
-          setSubdomains,
-          setShuffleDNSCustomScans,
-          setMostRecentAmassScan,
-          setMostRecentSublist3rScan,
-          setMostRecentAssetfinderScan,
-          setMostRecentGauScan,
-          setMostRecentCTLScan,
-          setMostRecentSublist3rScan,
-          setMostRecentHttpxScan,
-          setMostRecentShuffleDNSScan,
-          setMostRecentCeWLScan,
-          setMostRecentGoSpiderScan,
-          setMostRecentSubdomainizerScan,
-          setMostRecentNucleiScreenshotScan,
-          setMostRecentMetaDataScan,
-          setMostRecentShuffleDNSCustomScan,
-          setMostRecentAmassScanStatus,
-          setMostRecentSublist3rScanStatus,
-          setMostRecentAssetfinderScanStatus,
-          setMostRecentGauScanStatus,
-          setMostRecentCTLScanStatus,
-          setMostRecentSubfinderScanStatus,
-          setMostRecentHttpxScanStatus,
-          setMostRecentShuffleDNSScanStatus,
-          setMostRecentCeWLScanStatus,
-          setMostRecentGoSpiderScanStatus,
-          setMostRecentSubdomainizerScanStatus,
-          setMostRecentNucleiScreenshotScanStatus,
-          setMostRecentMetaDataScanStatus,
-          setMostRecentShuffleDNSCustomScanStatus,
-          handleConsolidate,
-          config,
-          sessionData.session_id // pass session id
-        ),
-        consolidatedSubdomains, // pass consolidated subdomains
-        mostRecentHttpxScan, // pass most recent httpx scan
-        sessionData.session_id // pass session id
-      );
-    } catch (error) {
-      console.error('[AutoScan] Error fetching config or starting scan:', error);
-    }
+  // Remove the original startQuickScan definition and replace it with this wrapper function
+  const startAutoScanWrapper = async () => {
+    await startAutoScan(
+      activeTarget,
+      getAutoScanSteps,
+      setIsAutoScanning,
+      setAutoScanCurrentStep,
+      setAutoScanTargetId,
+      setIsGauScanning,
+      setMostRecentGauScan,
+      setMostRecentGauScanStatus,
+      setIsCTLScanning,
+      setMostRecentCTLScan,
+      setMostRecentCTLScanStatus,
+      setIsSubfinderScanning,
+      setMostRecentSubfinderScan,
+      setMostRecentSubfinderScanStatus,
+      setIsConsolidating,
+      handleConsolidate,
+      setIsHttpxScanning,
+      setMostRecentHttpxScan,
+      setMostRecentHttpxScanStatus,
+      setIsNucleiScreenshotScanning,
+      setMostRecentNucleiScreenshotScan,
+      setMostRecentNucleiScreenshotScanStatus,
+      setIsMetaDataScanning,
+      setMostRecentMetaDataScan,
+      setMostRecentMetaDataScanStatus,
+      startMetaDataScan,
+      initiateSubfinderScan,
+      initiateHttpxScan,
+      initiateNucleiScreenshotScan,
+      setSubfinderScans,
+      setHttpxScans,
+      setNucleiScreenshotScans,
+      setMetaDataScans,
+      monitorSubfinderScanStatus,
+      monitorHttpxScanStatus,
+      monitorNucleiScreenshotScanStatus,
+      monitorMetaDataScanStatus,
+      initiateMetaDataScan,
+      initiateCTLScan,
+      monitorCTLScanStatus,
+      setCTLScans,
+      setGauScans,
+      SCAN_TYPES.QUICK
+    );
   };
 
+  const startBalancedScan = () => {
+    startAutoScan(
+      activeTarget,
+      getAutoScanSteps,
+      setIsAutoScanning,
+      setAutoScanCurrentStep,
+      setAutoScanTargetId,
+      setIsGauScanning,
+      setMostRecentGauScan,
+      setMostRecentGauScanStatus,
+      setIsCTLScanning,
+      setMostRecentCTLScan,
+      setMostRecentCTLScanStatus,
+      setIsSubfinderScanning,
+      setMostRecentSubfinderScan,
+      setMostRecentSubfinderScanStatus,
+      setIsConsolidating,
+      handleConsolidate,
+      setIsHttpxScanning,
+      setMostRecentHttpxScan,
+      setMostRecentHttpxScanStatus,
+      setIsNucleiScreenshotScanning,
+      setMostRecentNucleiScreenshotScan,
+      setMostRecentNucleiScreenshotScanStatus,
+      setIsMetaDataScanning,
+      setMostRecentMetaDataScan,
+      setMostRecentMetaDataScanStatus,
+      startMetaDataScan,
+      initiateSubfinderScan,
+      initiateHttpxScan,
+      initiateNucleiScreenshotScan,
+      setSubfinderScans,
+      setHttpxScans,
+      setNucleiScreenshotScans,
+      setMetaDataScans,
+      monitorSubfinderScanStatus,
+      monitorHttpxScanStatus,
+      monitorNucleiScreenshotScanStatus,
+      monitorMetaDataScanStatus,
+      initiateMetaDataScan,
+      initiateCTLScan,
+      monitorCTLScanStatus,
+      setCTLScans,
+      setGauScans,
+      SCAN_TYPES.BALANCED
+    );
+  }
+
+  const startFullScan = () => {
+    startAutoScan(
+      activeTarget,
+      getAutoScanSteps,
+      setIsAutoScanning,
+      setAutoScanCurrentStep,
+      setAutoScanTargetId,
+      setIsGauScanning,
+      setMostRecentGauScan,
+      setMostRecentGauScanStatus,
+      setIsCTLScanning,
+      setMostRecentCTLScan,
+      setMostRecentCTLScanStatus,
+      setIsSubfinderScanning,
+      setMostRecentSubfinderScan,
+      setMostRecentSubfinderScanStatus,
+      setIsConsolidating,
+      handleConsolidate,
+      setIsHttpxScanning,
+      setMostRecentHttpxScan,
+      setMostRecentHttpxScanStatus,
+      setIsNucleiScreenshotScanning,
+      setMostRecentNucleiScreenshotScan,
+      setMostRecentNucleiScreenshotScanStatus,
+      setIsMetaDataScanning,
+      setMostRecentMetaDataScan,
+      setMostRecentMetaDataScanStatus,
+      startMetaDataScan,
+      initiateSubfinderScan,
+      initiateHttpxScan,
+      initiateNucleiScreenshotScan,
+      setSubfinderScans,
+      setHttpxScans,
+      setNucleiScreenshotScans,
+      setMetaDataScans,
+      monitorSubfinderScanStatus,
+      monitorHttpxScanStatus,
+      monitorNucleiScreenshotScanStatus,
+      monitorMetaDataScanStatus,
+      initiateMetaDataScan,
+      initiateCTLScan,
+      monitorCTLScanStatus,
+      setCTLScans,
+      setGauScans,
+      SCAN_TYPES.FULL
+    );
+  }
+
+  const startYOLOScan = () => {
+    startAutoScan(
+      activeTarget,
+      getAutoScanSteps,
+      setIsAutoScanning,
+      setAutoScanCurrentStep,
+      setAutoScanTargetId,
+      setIsGauScanning,
+      setMostRecentGauScan,
+      setMostRecentGauScanStatus,
+      setIsCTLScanning,
+      setMostRecentCTLScan,
+      setMostRecentCTLScanStatus,
+      setIsSubfinderScanning,
+      setMostRecentSubfinderScan,
+      setMostRecentSubfinderScanStatus,
+      setIsConsolidating,
+      handleConsolidate,
+      setIsHttpxScanning,
+      setMostRecentHttpxScan,
+      setMostRecentHttpxScanStatus,
+      setIsNucleiScreenshotScanning,
+      setMostRecentNucleiScreenshotScan,
+      setMostRecentNucleiScreenshotScanStatus,
+      setIsMetaDataScanning,
+      setMostRecentMetaDataScan,
+      setMostRecentMetaDataScanStatus,
+      startMetaDataScan,
+      initiateSubfinderScan,
+      initiateHttpxScan,
+      initiateNucleiScreenshotScan,
+      setSubfinderScans,
+      setHttpxScans,
+      setNucleiScreenshotScans,
+      setMetaDataScans,
+      monitorSubfinderScanStatus,
+      monitorHttpxScanStatus,
+      monitorNucleiScreenshotScanStatus,
+      monitorMetaDataScanStatus,
+      initiateMetaDataScan,
+      initiateCTLScan,
+      monitorCTLScanStatus,
+      setCTLScans,
+      setGauScans,
+      SCAN_TYPES.YOLO
+    );
+  }
+
+  // Keep the individual scan functions for direct access
   const startHttpxScan = () => {
     initiateHttpxScan(
       activeTarget,
@@ -2699,6 +2909,47 @@ function App() {
     }
   };
 
+  const handleInvestigateFQDNs = async () => {
+    if (!activeTarget) return;
+    
+    setIsInvestigatingFQDNs(true);
+    try {
+      const result = await investigateFQDNs(activeTarget);
+      if (result) {
+        console.log('FQDN investigation result:', result);
+        
+        // Fetch updated counts after investigation
+        try {
+          const response = await fetch(
+            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/attack-surface-asset-counts/${activeTarget.id}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            setAttackSurfaceASNsCount(data.asns || 0);
+            setAttackSurfaceNetworkRangesCount(data.network_ranges || 0);
+            setAttackSurfaceIPAddressesCount(data.ip_addresses || 0);
+            setAttackSurfaceLiveWebServersCount(data.live_web_servers || 0);
+            setAttackSurfaceCloudAssetsCount(data.cloud_assets || 0);
+            setAttackSurfaceFQDNsCount(data.fqdns || 0);
+          }
+        } catch (error) {
+          console.error('Error fetching updated asset counts:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error investigating FQDNs:', error);
+    } finally {
+      setIsInvestigatingFQDNs(false);
+    }
+  };
+
   const handleOpenUniqueSubdomainsModal = () => setShowUniqueSubdomainsModal(true);
 
   const handleOpenCeWLResultsModal = () => setShowCeWLResultsModal(true);
@@ -2842,7 +3093,8 @@ function App() {
         throw new Error('Failed to fetch target URLs');
       }
       const data = await response.json();
-      setTargetURLs(data);
+      const safeData = data || [];
+      setTargetURLs(safeData);
       setShowMetaDataModal(true);
     } catch (error) {
       console.error('Error fetching target URLs:', error);
@@ -2859,9 +3111,10 @@ function App() {
         throw new Error('Failed to fetch target URLs');
       }
       const data = await response.json();
+      const safeData = data || [];
 
       // Calculate and update ROI scores for each target
-      const updatePromises = data.map(async (target) => {
+      const updatePromises = safeData.map(async (target) => {
         const score = calculateROIScore(target);
         const updateResponse = await fetch(
           `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/target-urls/${target.id}/roi-score`,
@@ -2889,7 +3142,8 @@ function App() {
         throw new Error('Failed to fetch updated target URLs');
       }
       const updatedData = await updatedResponse.json();
-      setTargetURLs(updatedData);
+      const safeUpdatedData = updatedData || [];
+      setTargetURLs(safeUpdatedData);
       setShowROIReport(true);
     } catch (error) {
       console.error('Error preparing ROI report:', error);
@@ -2904,8 +3158,44 @@ function App() {
     setShowSettingsModal(true);
   };
 
+  const handleOpenToolsModal = () => {
+    setShowToolsModal(true);
+  };
+
   const handleOpenExportModal = () => {
     setShowExportModal(true);
+  };
+
+  const handleOpenImportModal = () => {
+    setShowImportModal(true);
+  };
+
+  const handleCloseImportModal = () => {
+    setShowImportModal(false);
+  };
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+  };
+
+  const handleWelcomeAddScopeTarget = () => {
+    setShowWelcomeModal(false);
+    setShowModal(true);
+  };
+
+  const handleWelcomeImportData = () => {
+    setShowWelcomeModal(false);
+    setShowImportModal(true);
+  };
+
+  const handleImportSuccess = async (result) => {
+    await fetchScopeTargets();
+  };
+
+  const handleBackToWelcome = () => {
+    setShowModal(false);
+    setShowImportModal(false);
+    setShowWelcomeModal(true);
   };
 
   const handleOpenSettingsOnAPIKeysTab = () => {
@@ -3461,1103 +3751,6 @@ function App() {
     }
   }, [activeTarget]);
 
-  // Amass Enum Company scans useEffect
-  useEffect(() => {
-    // Immediately reset counts when target changes to prevent showing stale data
-    setAmassEnumScannedDomainsCount(0);
-    setAmassEnumCompanyCloudDomains([]);
-    setMostRecentAmassEnumCompanyScan(null);
-    setMostRecentAmassEnumCompanyScanStatus(null);
-    
-    if (activeTarget && !isAmassEnumCompanyScanning) { // Only fetch when not actively scanning
-      const fetchAmassEnumCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/amass-enum-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch Amass Enum Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setAmassEnumCompanyScans(scans);
-            if (scans.length > 0) {
-              const mostRecentScan = scans.reduce((latest, scan) => {
-                const scanDate = new Date(scan.created_at);
-                return scanDate > new Date(latest.created_at) ? scan : latest;
-              }, scans[0]);
-              setMostRecentAmassEnumCompanyScan(mostRecentScan);
-              setMostRecentAmassEnumCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch raw results to get actual scanned domains count
-              if (mostRecentScan.scan_id) {
-                const rawResultsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/raw-results`
-                );
-                if (rawResultsResponse.ok) {
-                  const rawResults = await rawResultsResponse.json();
-                  // Count unique domains from raw results, not total number of results
-                  const uniqueDomains = rawResults ? [...new Set(rawResults.map(result => result.domain))].length : 0;
-                  setAmassEnumScannedDomainsCount(uniqueDomains);
-                } else {
-                  setAmassEnumScannedDomainsCount(0);
-                }
-
-                // Fetch cloud domains for the main card display
-                const cloudDomainsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/cloud-domains`
-                );
-                if (cloudDomainsResponse.ok) {
-                  const cloudDomains = await cloudDomainsResponse.json();
-                  setAmassEnumCompanyCloudDomains(cloudDomains || []);
-                } else {
-                  setAmassEnumCompanyCloudDomains([]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AMASS-ENUM-COMPANY] Error fetching scans:', error);
-          setAmassEnumScannedDomainsCount(0);
-          setAmassEnumCompanyCloudDomains([]);
-        }
-      };
-      fetchAmassEnumCompanyScans();
-    }
-  }, [activeTarget, isAmassEnumCompanyScanning]); // Add isAmassEnumCompanyScanning dependency
-
-  // DNSx Company scans useEffect  
-  useEffect(() => {
-    // Immediately reset counts when target changes to prevent showing stale data
-    setDnsxScannedDomainsCount(0);
-    setDnsxCompanyDnsRecords([]);
-    setMostRecentDNSxCompanyScan(null);
-    setMostRecentDNSxCompanyScanStatus(null);
-    
-    if (activeTarget) {
-      const fetchDNSxCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/dnsx-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch DNSx Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setDnsxCompanyScans(scans);
-            if (scans.length > 0) {
-              // API returns scans in descending order (newest first), so just use the first one
-              const mostRecentScan = scans[0];
-              setMostRecentDNSxCompanyScan(mostRecentScan);
-              setMostRecentDNSxCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch raw results to get actual scanned domains count
-              if (mostRecentScan.scan_id) {
-                // Get the actual number of root domains that were scanned from the scan configuration
-                // instead of counting discovered DNS records from raw results
-                if (mostRecentScan.domains && Array.isArray(mostRecentScan.domains)) {
-                  setDnsxScannedDomainsCount(mostRecentScan.domains.length);
-                } else {
-                  setDnsxScannedDomainsCount(0);
-                }
-
-                // Fetch DNS records for the main card display
-                const dnsRecordsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/dnsx-company/${mostRecentScan.scan_id}/dns-records`
-                );
-                if (dnsRecordsResponse.ok) {
-                  const dnsRecords = await dnsRecordsResponse.json();
-                  setDnsxCompanyDnsRecords(dnsRecords || []);
-                } else {
-                  setDnsxCompanyDnsRecords([]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[DNSX-COMPANY] Error fetching scans:', error);
-          setDnsxScannedDomainsCount(0);
-          setDnsxCompanyDnsRecords([]);
-        }
-      };
-      fetchDNSxCompanyScans();
-    }
-  }, [activeTarget]);
-
-  // Katana Company scans useEffect
-  useEffect(() => {
-    if (activeTarget) {
-      const fetchKatanaCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/katana-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch Katana Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setKatanaCompanyScans(scans);
-            if (scans.length > 0) {
-              const mostRecentScan = scans[0];
-              setMostRecentKatanaCompanyScan(mostRecentScan);
-              setMostRecentKatanaCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch accumulated cloud assets from the backend API
-              try {
-                const assetsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/katana-company/${mostRecentScan.scan_id}/cloud-assets`
-                );
-                if (assetsResponse.ok) {
-                  const assets = await assetsResponse.json();
-                  setKatanaCompanyCloudAssets(assets || []);
-                } else {
-                  console.error('[KATANA-COMPANY] Failed to fetch cloud assets');
-                  setKatanaCompanyCloudAssets([]);
-                }
-              } catch (error) {
-                console.error('[KATANA-COMPANY] Error fetching cloud assets:', error);
-                setKatanaCompanyCloudAssets([]);
-              }
-            } else {
-              setKatanaCompanyCloudAssets([]);
-            }
-          }
-        } catch (error) {
-          console.error('[KATANA-COMPANY] Error fetching scans:', error);
-          setKatanaCompanyCloudAssets([]);
-        }
-      };
-      fetchKatanaCompanyScans();
-    }
-  }, [activeTarget]);
-
-  // Nuclei scans useEffect
-  useEffect(() => {
-    if (activeTarget) {
-      loadNucleiConfig();
-    }
-  }, [activeTarget]);
-
-  const startNucleiScan = () => {
-    initiateNucleiScan(
-      activeTarget,
-      monitorNucleiScanStatus,
-      setIsNucleiScanning,
-      setNucleiScans,
-      setMostRecentNucleiScanStatus,
-      setMostRecentNucleiScan,
-      setActiveNucleiScan
-    );
-  };
-
-  const startCensysCompanyScan = () => {
-    initiateCensysCompanyScan(
-      activeTarget,
-      monitorCensysCompanyScanStatus,
-      setIsCensysCompanyScanning,
-      setCensysCompanyScans,
-      setMostRecentCensysCompanyScanStatus,
-      setMostRecentCensysCompanyScan
-    );
-  };
-
-  const startShodanCompanyScan = () => {
-    initiateShodanCompanyScan(
-      activeTarget,
-      monitorShodanCompanyScanStatus,
-      setIsShodanCompanyScanning,
-      setShodanCompanyScans,
-      setMostRecentShodanCompanyScanStatus,
-      setMostRecentShodanCompanyScan
-    );
-  };
-
-  const startGitHubReconScan = () => {
-    initiateGitHubReconScan(
-      activeTarget,
-      monitorGitHubReconScanStatus,
-      setIsGitHubReconScanning,
-      setGitHubReconScans,
-      setMostRecentGitHubReconScanStatus,
-      setMostRecentGitHubReconScan
-    );
-  };
-
-  useEffect(() => {
-    if (activeTarget) {
-      monitorGitHubReconScanStatus(
-        activeTarget,
-        setGitHubReconScans,
-        setMostRecentGitHubReconScan,
-        setIsGitHubReconScanning,
-        setMostRecentGitHubReconScanStatus
-      );
-    }
-  }, [activeTarget]);
-
-  useEffect(() => {
-    if (activeTarget) {
-      monitorShodanCompanyScanStatus(
-        activeTarget,
-        setShodanCompanyScans,
-        setMostRecentShodanCompanyScan,
-        setIsShodanCompanyScanning,
-        setMostRecentShodanCompanyScanStatus
-      );
-    }
-  }, [activeTarget]);
-
-  const handleDomainsDeleted = async () => {
-    if (activeTarget) {
-      try {
-        // Refresh individual tool scan data to update domain counts on cards
-        
-        // Refresh Google Dorking domains
-        await fetchGoogleDorkingDomains();
-        
-        // Refresh Reverse Whois domains  
-        await fetchReverseWhoisDomains();
-        
-        // Refresh CTL Company scans
-        monitorCTLCompanyScanStatus(
-          activeTarget,
-          setCTLCompanyScans,
-          setMostRecentCTLCompanyScan,
-          setIsCTLCompanyScanning,
-          setMostRecentCTLCompanyScanStatus
-        );
-        
-        // Refresh SecurityTrails Company scans
-        monitorSecurityTrailsCompanyScanStatus(
-          activeTarget,
-          setSecurityTrailsCompanyScans,
-          setMostRecentSecurityTrailsCompanyScan,
-          setIsSecurityTrailsCompanyScanning,
-          setMostRecentSecurityTrailsCompanyScanStatus
-        );
-        
-        // Refresh Censys Company scans
-        monitorCensysCompanyScanStatus(
-          activeTarget,
-          setCensysCompanyScans,
-          setMostRecentCensysCompanyScan,
-          setIsCensysCompanyScanning,
-          setMostRecentCensysCompanyScanStatus
-        );
-        
-        // Refresh GitHub Recon scans
-        monitorGitHubReconScanStatus(
-          activeTarget,
-          setGitHubReconScans,
-          setMostRecentGitHubReconScan,
-          setIsGitHubReconScanning,
-          setMostRecentGitHubReconScanStatus
-        );
-        
-        // Refresh Shodan Company scans
-        monitorShodanCompanyScanStatus(
-          activeTarget,
-          setShodanCompanyScans,
-          setMostRecentShodanCompanyScan,
-          setIsShodanCompanyScanning,
-          setMostRecentShodanCompanyScanStatus
-        );
-        
-        // Refresh DNSx Company scans
-        const fetchDNSxCompanyScansRefresh = async () => {
-          try {
-            const response = await fetch(
-              `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/dnsx-company`
-            );
-            if (!response.ok) {
-              throw new Error('Failed to fetch DNSx Company scans');
-            }
-            const scans = await response.json();
-            if (Array.isArray(scans)) {
-              setDnsxCompanyScans(scans);
-              if (scans.length > 0) {
-                const mostRecentScan = scans[0];
-                setMostRecentDNSxCompanyScan(mostRecentScan);
-                setMostRecentDNSxCompanyScanStatus(mostRecentScan.status);
-              }
-            }
-          } catch (error) {
-            console.error('[DNSX-COMPANY] Error refreshing scans:', error);
-          }
-        };
-        fetchDNSxCompanyScansRefresh();
-        
-        // Refresh Katana Company scans
-        const fetchKatanaCompanyScansRefresh = async () => {
-          try {
-            const response = await fetch(
-              `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/katana-company`
-            );
-            if (!response.ok) {
-              throw new Error('Failed to fetch Katana Company scans');
-            }
-            const scans = await response.json();
-            if (Array.isArray(scans)) {
-              setKatanaCompanyScans(scans);
-              if (scans.length > 0) {
-                const mostRecentScan = scans[0];
-                setMostRecentKatanaCompanyScan(mostRecentScan);
-                setMostRecentKatanaCompanyScanStatus(mostRecentScan.status);
-                
-                // Fetch accumulated cloud assets for the card count
-                try {
-                  const assetsResponse = await fetch(
-                    `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/katana-company/${mostRecentScan.scan_id}/cloud-assets`
-                  );
-                  if (assetsResponse.ok) {
-                    const assets = await assetsResponse.json();
-                    setKatanaCompanyCloudAssets(assets || []);
-                  } else {
-                    setKatanaCompanyCloudAssets([]);
-                  }
-                } catch (error) {
-                  console.error('[KATANA-COMPANY] Error fetching cloud assets:', error);
-                  setKatanaCompanyCloudAssets([]);
-                }
-              } else {
-                setKatanaCompanyCloudAssets([]);
-              }
-            }
-          } catch (error) {
-            console.error('[KATANA-COMPANY] Error refreshing scans:', error);
-          }
-        };
-        fetchKatanaCompanyScansRefresh();
-        
-      } catch (error) {
-        console.error('Error refreshing individual tool scan data after deletion:', error);
-      }
-    }
-  };
-
-  const handleCloseDNSxConfigModal = () => setShowDNSxConfigModal(false);
-  const handleOpenDNSxConfigModal = () => setShowDNSxConfigModal(true);
-
-  const handleDNSxConfigSave = async (config) => {
-    if (config && config.domains) {
-      setDnsxSelectedDomainsCount(config.domains.length);
-    }
-    // Reload the complete config to recalculate wildcard domains count
-    await loadDNSxConfig();
-  };
-
-  const loadDNSxConfig = async () => {
-    if (!activeTarget?.id) return;
-
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/dnsx-config/${activeTarget.id}`
-      );
-      
-      if (response.ok) {
-        const config = await response.json();
-        if (config.domains && Array.isArray(config.domains)) {
-          setDnsxSelectedDomainsCount(config.domains.length);
-        } else {
-          setDnsxSelectedDomainsCount(0);
-        }
-        
-        // Always calculate wildcard domains count from discovered domains
-        if (config.wildcard_domains && Array.isArray(config.wildcard_domains) && config.wildcard_domains.length > 0) {
-          try {
-            // Fetch all scope targets to find wildcard targets
-            const scopeTargetsResponse = await fetch(
-              `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/read`
-            );
-            
-            if (scopeTargetsResponse.ok) {
-              const scopeTargetsData = await scopeTargetsResponse.json();
-              const targets = Array.isArray(scopeTargetsData) ? scopeTargetsData : scopeTargetsData.targets;
-              
-              if (targets && Array.isArray(targets)) {
-                let totalDiscoveredDomains = 0;
-                
-                // Find wildcard targets that match our saved wildcard domains
-                const wildcardTargets = targets.filter(target => {
-                  if (!target || target.type !== 'Wildcard') return false;
-                  
-                  const rootDomainFromWildcard = target.scope_target.startsWith('*.') 
-                    ? target.scope_target.substring(2) 
-                    : target.scope_target;
-                  
-                  return config.wildcard_domains.includes(rootDomainFromWildcard);
-                });
-                
-                // Count discovered domains from each wildcard target
-                for (const wildcardTarget of wildcardTargets) {
-                  try {
-                    const liveWebServersResponse = await fetch(
-                      `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/api/scope-targets/${wildcardTarget.id}/target-urls`
-                    );
-                    
-                    if (liveWebServersResponse.ok) {
-                      const liveWebServersData = await liveWebServersResponse.json();
-                      const targetUrls = Array.isArray(liveWebServersData) ? liveWebServersData : liveWebServersData.target_urls;
-                      
-                      if (targetUrls && Array.isArray(targetUrls)) {
-                        const discoveredDomains = Array.from(new Set(
-                          targetUrls
-                            .map(url => {
-                              try {
-                                if (!url || !url.url) return null;
-                                const urlObj = new URL(url.url);
-                                return urlObj.hostname;
-                              } catch {
-                                return null;
-                              }
-                            })
-                            .filter(domain => domain && domain !== wildcardTarget.scope_target)
-                        ));
-                        
-                        totalDiscoveredDomains += discoveredDomains.length;
-                      }
-                    }
-                  } catch (error) {
-                    console.error(`Error fetching wildcard domains for ${wildcardTarget.scope_target}:`, error);
-                  }
-                }
-                
-                setDnsxWildcardDomainsCount(totalDiscoveredDomains);
-              } else {
-                setDnsxWildcardDomainsCount(0);
-              }
-            } else {
-              setDnsxWildcardDomainsCount(0);
-            }
-          } catch (error) {
-            console.error('Error calculating wildcard domains count:', error);
-            setDnsxWildcardDomainsCount(0);
-          }
-        } else {
-          setDnsxWildcardDomainsCount(0);
-        }
-      } else {
-        setDnsxSelectedDomainsCount(0);
-        setDnsxWildcardDomainsCount(0);
-      }
-    } catch (error) {
-      console.error('Error loading DNSx config:', error);
-      setDnsxSelectedDomainsCount(0);
-      setDnsxWildcardDomainsCount(0);
-    }
-  };
-
-  // Add DNSx Company handlers
-  const handleCloseDNSxCompanyResultsModal = () => setShowDNSxCompanyResultsModal(false);
-  const handleOpenDNSxCompanyResultsModal = () => setShowDNSxCompanyResultsModal(true);
-  
-  const handleCloseDNSxCompanyHistoryModal = () => setShowDNSxCompanyHistoryModal(false);
-  const handleOpenDNSxCompanyHistoryModal = () => setShowDNSxCompanyHistoryModal(true);
-
-  const startDNSxCompanyScan = async () => {
-    if (!activeTarget) {
-      console.error('No active target selected');
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/dnsx-config/${activeTarget.id}`
-      );
-      
-      if (!response.ok) {
-        console.error('No DNSx configuration found');
-        setToastTitle('Configuration Required');
-        setToastMessage('Please configure domains in the DNSx configuration before starting the scan.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-        return;
-      }
-
-      const config = await response.json();
-      
-      if (!config.domains || config.domains.length === 0) {
-        console.error('No domains configured for DNSx scan');
-        setToastTitle('Configuration Required');
-        setToastMessage('Please select domains in the DNSx configuration before starting the scan.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-        return;
-      }
-
-      await initiateDNSxCompanyScan(
-        activeTarget,
-        config.domains,
-        setIsDNSxCompanyScanning,
-        setDnsxCompanyScans,
-        setMostRecentDNSxCompanyScan,
-        setMostRecentDNSxCompanyScanStatus,
-        setDnsxCompanyDnsRecords
-      );
-    } catch (error) {
-      console.error('Error starting DNSx Company scan:', error);
-      setToastTitle('Error');
-      setToastMessage('Failed to start DNSx scan. Please try again.');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 5000);
-    }
-  };
-
-  const handleTrimNetworkRanges = () => {
-    handleOpenTrimNetworkRangesModal();
-  };
-
-  const startAmassEnumCompanyScan = async () => {
-    if (!activeTarget) {
-      console.error('No active target selected');
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-config/${activeTarget.id}`
-      );
-      
-      if (!response.ok) {
-        console.error('No Amass Enum configuration found');
-        setToastTitle('Configuration Required');
-        setToastMessage('Please configure domains in the Amass Enum configuration before starting the scan.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-        return;
-      }
-
-      const config = await response.json();
-      
-      if (!config.domains || config.domains.length === 0) {
-        console.error('No domains configured for Amass Enum scan');
-        setToastTitle('Configuration Required');
-        setToastMessage('Please select domains in the Amass Enum configuration before starting the scan.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-        return;
-      }
-
-      await initiateAmassEnumCompanyScan(
-        activeTarget,
-        config.domains,
-        setIsAmassEnumCompanyScanning,
-        setAmassEnumCompanyScans,
-        setMostRecentAmassEnumCompanyScan,
-        setMostRecentAmassEnumCompanyScanStatus,
-        setAmassEnumCompanyCloudDomains
-      );
-    } catch (error) {
-      console.error('Error starting Amass Enum Company scan:', error);
-      setToastTitle('Error');
-      setToastMessage('Failed to start Amass Enum scan. Please try again.');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 5000);
-    }
-  };
-
-  // Add Cloud Enum scans useEffect
-  useEffect(() => {
-    // Immediately reset counts when target changes to prevent showing stale data
-    setAmassEnumScannedDomainsCount(0);
-    setAmassEnumCompanyCloudDomains([]);
-    setMostRecentAmassEnumCompanyScan(null);
-    setMostRecentAmassEnumCompanyScanStatus(null);
-    
-    if (activeTarget && !isAmassEnumCompanyScanning) { // Only fetch when not actively scanning
-      const fetchAmassEnumCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/amass-enum-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch Amass Enum Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setAmassEnumCompanyScans(scans);
-            if (scans.length > 0) {
-              const mostRecentScan = scans.reduce((latest, scan) => {
-                const scanDate = new Date(scan.created_at);
-                return scanDate > new Date(latest.created_at) ? scan : latest;
-              }, scans[0]);
-              setMostRecentAmassEnumCompanyScan(mostRecentScan);
-              setMostRecentAmassEnumCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch raw results to get actual scanned domains count
-              if (mostRecentScan.scan_id) {
-                const rawResultsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/raw-results`
-                );
-                if (rawResultsResponse.ok) {
-                  const rawResults = await rawResultsResponse.json();
-                  // Count unique domains from raw results, not total number of results
-                  const uniqueDomains = rawResults ? [...new Set(rawResults.map(result => result.domain))].length : 0;
-                  setAmassEnumScannedDomainsCount(uniqueDomains);
-                } else {
-                  setAmassEnumScannedDomainsCount(0);
-                }
-
-                // Fetch cloud domains for the main card display
-                const cloudDomainsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/cloud-domains`
-                );
-                if (cloudDomainsResponse.ok) {
-                  const cloudDomains = await cloudDomainsResponse.json();
-                  setAmassEnumCompanyCloudDomains(cloudDomains || []);
-                } else {
-                  setAmassEnumCompanyCloudDomains([]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AMASS-ENUM-COMPANY] Error fetching scans:', error);
-          setAmassEnumScannedDomainsCount(0);
-          setAmassEnumCompanyCloudDomains([]);
-        }
-      };
-      fetchAmassEnumCompanyScans();
-    }
-  }, [activeTarget, isAmassEnumCompanyScanning]); // Add isAmassEnumCompanyScanning dependency
-
-  // Add Cloud Enum scans useEffect
-  useEffect(() => {
-    // Immediately reset counts when target changes to prevent showing stale data
-    setAmassEnumScannedDomainsCount(0);
-    setAmassEnumCompanyCloudDomains([]);
-    setMostRecentAmassEnumCompanyScan(null);
-    setMostRecentAmassEnumCompanyScanStatus(null);
-    
-    if (activeTarget && !isAmassEnumCompanyScanning) { // Only fetch when not actively scanning
-      const fetchAmassEnumCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/amass-enum-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch Amass Enum Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setAmassEnumCompanyScans(scans);
-            if (scans.length > 0) {
-              const mostRecentScan = scans.reduce((latest, scan) => {
-                const scanDate = new Date(scan.created_at);
-                return scanDate > new Date(latest.created_at) ? scan : latest;
-              }, scans[0]);
-              setMostRecentAmassEnumCompanyScan(mostRecentScan);
-              setMostRecentAmassEnumCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch raw results to get actual scanned domains count
-              if (mostRecentScan.scan_id) {
-                const rawResultsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/raw-results`
-                );
-                if (rawResultsResponse.ok) {
-                  const rawResults = await rawResultsResponse.json();
-                  // Count unique domains from raw results, not total number of results
-                  const uniqueDomains = rawResults ? [...new Set(rawResults.map(result => result.domain))].length : 0;
-                  setAmassEnumScannedDomainsCount(uniqueDomains);
-                } else {
-                  setAmassEnumScannedDomainsCount(0);
-                }
-
-                // Fetch cloud domains for the main card display
-                const cloudDomainsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/cloud-domains`
-                );
-                if (cloudDomainsResponse.ok) {
-                  const cloudDomains = await cloudDomainsResponse.json();
-                  setAmassEnumCompanyCloudDomains(cloudDomains || []);
-                } else {
-                  setAmassEnumCompanyCloudDomains([]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AMASS-ENUM-COMPANY] Error fetching scans:', error);
-          setAmassEnumScannedDomainsCount(0);
-          setAmassEnumCompanyCloudDomains([]);
-        }
-      };
-      fetchAmassEnumCompanyScans();
-    }
-  }, [activeTarget, isAmassEnumCompanyScanning]); // Add isAmassEnumCompanyScanning dependency
-
-  // Add Cloud Enum scans useEffect
-  useEffect(() => {
-    // Immediately reset counts when target changes to prevent showing stale data
-    setAmassEnumScannedDomainsCount(0);
-    setAmassEnumCompanyCloudDomains([]);
-    setMostRecentAmassEnumCompanyScan(null);
-    setMostRecentAmassEnumCompanyScanStatus(null);
-    
-    if (activeTarget && !isAmassEnumCompanyScanning) { // Only fetch when not actively scanning
-      const fetchAmassEnumCompanyScans = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/scopetarget/${activeTarget.id}/scans/amass-enum-company`
-          );
-          if (!response.ok) {
-            throw new Error('Failed to fetch Amass Enum Company scans');
-          }
-          const scans = await response.json();
-          if (Array.isArray(scans)) {
-            setAmassEnumCompanyScans(scans);
-            if (scans.length > 0) {
-              const mostRecentScan = scans.reduce((latest, scan) => {
-                const scanDate = new Date(scan.created_at);
-                return scanDate > new Date(latest.created_at) ? scan : latest;
-              }, scans[0]);
-              setMostRecentAmassEnumCompanyScan(mostRecentScan);
-              setMostRecentAmassEnumCompanyScanStatus(mostRecentScan.status);
-              
-              // Fetch raw results to get actual scanned domains count
-              if (mostRecentScan.scan_id) {
-                const rawResultsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/raw-results`
-                );
-                if (rawResultsResponse.ok) {
-                  const rawResults = await rawResultsResponse.json();
-                  // Count unique domains from raw results, not total number of results
-                  const uniqueDomains = rawResults ? [...new Set(rawResults.map(result => result.domain))].length : 0;
-                  setAmassEnumScannedDomainsCount(uniqueDomains);
-                } else {
-                  setAmassEnumScannedDomainsCount(0);
-                }
-
-                // Fetch cloud domains for the main card display
-                const cloudDomainsResponse = await fetch(
-                  `${process.env.REACT_APP_SERVER_PROTOCOL}://${process.env.REACT_APP_SERVER_IP}:${process.env.REACT_APP_SERVER_PORT}/amass-enum-company/${mostRecentScan.scan_id}/cloud-domains`
-                );
-                if (cloudDomainsResponse.ok) {
-                  const cloudDomains = await cloudDomainsResponse.json();
-                  setAmassEnumCompanyCloudDomains(cloudDomains || []);
-                } else {
-                  setAmassEnumCompanyCloudDomains([]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AMASS-ENUM-COMPANY] Error fetching scans:', error);
-          setAmassEnumScannedDomainsCount(0);
-          setAmassEnumCompanyCloudDomains([]);
-        }
-      };
-      fetchAmassEnumCompanyScans();
-    }
-  }, [activeTarget, isAmassEnumCompanyScanning]); // Add isAmassEnumCompanyScanning dependency
-
-  return (
-    <Container data-bs-theme="dark" className="App" style={{ padding: '20px' }}>
-      <style>
-        {`
-          .modal-90w {
-            max-width: 95% !important;
-            width: 95% !important;
-          }
-        `}
-      </style>
-      <Ars0nFrameworkHeader 
-        onSettingsClick={handleOpenSettingsModal} 
-        onExportClick={handleOpenExportModal}
-      />
-
-      <ToastContainer 
-        position="bottom-center"
-        style={{ 
-          position: 'fixed', 
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          minWidth: '300px'
-        }}
-      >
-        <Toast 
-          show={showToast} 
-          onClose={() => setShowToast(false)}
-          className={`custom-toast ${!showToast ? 'hide' : ''}`}
-          autohide
-          delay={3000}
-        >
-          <Toast.Header>
-            <MdCheckCircle 
-              className="success-icon me-2" 
-              size={20} 
-              color="#ff0000"
-            />
-            <strong className="me-auto" style={{ 
-              color: '#ff0000',
-              fontSize: '0.95rem',
-              letterSpacing: '0.5px'
-            }}>
-              {toastTitle}
-            </strong>
-          </Toast.Header>
-          <Toast.Body style={{ color: '#ffffff' }}>
-            <div className="d-flex align-items-center">
-              <span>{toastMessage}</span>
-            </div>
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
-
-      <AddScopeTargetModal
-        show={showModal}
-        handleClose={handleClose}
-        selections={selections}
-        handleSelect={handleSelect}
-        handleFormSubmit={handleSubmit}
-        errorMessage={errorMessage}
-      />
-
-      <SelectActiveScopeTargetModal
-        showActiveModal={showActiveModal}
-        handleActiveModalClose={handleActiveModalClose}
-        scopeTargets={scopeTargets}
-        activeTarget={activeTarget}
-        handleActiveSelect={handleActiveSelect}
-        handleDelete={handleDelete}
-      />
-
-      <SettingsModal
-        show={showSettingsModal}
-        handleClose={handleCloseSettingsModal}
-        initialTab={settingsModalInitialTab}
-        onApiKeyDeleted={handleApiKeyDeleted}
-      />
-
-      <ExportModal
-        show={showExportModal}
-        handleClose={handleCloseExportModal}
-      />
-
-      <Modal data-bs-theme="dark" show={showScanHistoryModal} onHide={handleCloseScanHistoryModal} size="xl">
-        <Modal.Header closeButton>
-          <Modal.Title className='text-danger'>Scan History</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Scan ID</th>
-                <th>Execution Time</th>
-                <th>Number of Results</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scanHistory.map((scan) => (
-                <tr key={scan.scan_id}>
-                  <td>{scan.scan_id || "ERROR"}</td>
-                  <td>{getExecutionTime(scan.execution_time) || "---"}</td>
-                  <td>{getResultLength(scan) || "---"}</td>
-                  <td>{Date(scan.created_at) || "ERROR"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Modal.Body>
-      </Modal>
-
-      <Modal data-bs-theme="dark" show={showRawResultsModal} onHide={handleCloseRawResultsModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title className='text-danger'>Raw Results</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <ListGroup>
-            {rawResults.map((result, index) => (
-              <ListGroup.Item key={index} className="text-white bg-dark">
-                {result}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        </Modal.Body>
-      </Modal>
-
-      <DNSRecordsModal
-        showDNSRecordsModal={showDNSRecordsModal}
-        handleCloseDNSRecordsModal={handleCloseDNSRecordsModal}
-        dnsRecords={dnsRecords}
-      />
-
-      <SubdomainsModal
-        showSubdomainsModal={showSubdomainsModal}
-        handleCloseSubdomainsModal={handleCloseSubdomainsModal}
-        subdomains={subdomains}
-      />
-
-      <CloudDomainsModal
-        showCloudDomainsModal={showCloudDomainsModal}
-        handleCloseCloudDomainsModal={handleCloseCloudDomainsModal}
-        cloudDomains={cloudDomains}
-      />
-
-      <InfrastructureMapModal
-        showInfraModal={showInfraModal}
-        handleCloseInfraModal={handleCloseInfraModal}
-        scanId={getLatestScanId(amassScans)}
-      />
-
-      <AmassIntelResultsModal
-        showAmassIntelResultsModal={showAmassIntelResultsModal}
-        handleCloseAmassIntelResultsModal={handleCloseAmassIntelResultsModal}
-        amassIntelResults={mostRecentAmassIntelScan}
-        setShowToast={setShowToast}
-      />
-
-      <AmassIntelHistoryModal
-        showAmassIntelHistoryModal={showAmassIntelHistoryModal}
-        handleCloseAmassIntelHistoryModal={handleCloseAmassIntelHistoryModal}
-        amassIntelScans={amassIntelScans}
-      />
-
-      <HttpxResultsModal
-        showHttpxResultsModal={showHttpxResultsModal}
-        handleCloseHttpxResultsModal={handleCloseHttpxResultsModal}
-        httpxResults={mostRecentHttpxScan}
-      />
-
-      <GauResultsModal
-        showGauResultsModal={showGauResultsModal}
-        handleCloseGauResultsModal={handleCloseGauResultsModal}
-        gauResults={mostRecentGauScan}
-      />
-
-      <Sublist3rResultsModal
-        showSublist3rResultsModal={showSublist3rResultsModal}
-        handleCloseSublist3rResultsModal={handleCloseSublist3rResultsModal}
-        sublist3rResults={mostRecentSublist3rScan}
-      />
-
-      <AssetfinderResultsModal
-        showAssetfinderResultsModal={showAssetfinderResultsModal}
-        handleCloseAssetfinderResultsModal={handleCloseAssetfinderResultsModal}
-        assetfinderResults={mostRecentAssetfinderScan}
-      />
-
-      <CTLResultsModal
-        showCTLResultsModal={showCTLResultsModal}
-        handleCloseCTLResultsModal={handleCloseCTLResultsModal}
-        ctlResults={mostRecentCTLScan}
-      />
-
-      <CTLCompanyResultsModal
-        showCTLCompanyResultsModal={showCTLCompanyResultsModal}
-        handleCloseCTLCompanyResultsModal={handleCloseCTLCompanyResultsModal}
-        ctlCompanyResults={mostRecentCTLCompanyScan}
-        setShowToast={setShowToast}
-      />
-
-      <CTLCompanyHistoryModal
-        showCTLCompanyHistoryModal={showCTLCompanyHistoryModal}
-        handleCloseCTLCompanyHistoryModal={handleCloseCTLCompanyHistoryModal}
-        ctlCompanyScans={ctlCompanyScans}
-      />
-
-      <CloudEnumResultsModal
-        showCloudEnumResultsModal={showCloudEnumResultsModal}
-        handleCloseCloudEnumResultsModal={handleCloseCloudEnumResultsModal}
-        cloudEnumResults={mostRecentCloudEnumScan}
-        setShowToast={setShowToast}
-      />
-
-      <CloudEnumHistoryModal
-        showCloudEnumHistoryModal={showCloudEnumHistoryModal}
-        handleCloseCloudEnumHistoryModal={handleCloseCloudEnumHistoryModal}
-        cloudEnumScans={cloudEnumScans}
-      />
-
-      <AmassEnumCompanyResultsModal
-        show={showAmassEnumCompanyResultsModal}
-        handleClose={handleCloseAmassEnumCompanyResultsModal}
-        activeTarget={activeTarget}
-        mostRecentAmassEnumCompanyScan={mostRecentAmassEnumCompanyScan}
-      />
-
-      <AmassEnumCompanyHistoryModal
-        show={showAmassEnumCompanyHistoryModal}
-        handleClose={handleCloseAmassEnumCompanyHistoryModal}
-        scans={amassEnumCompanyScans}
-      />
-
-      <DNSxCompanyResultsModal
-        show={showDNSxCompanyResultsModal}
-        handleClose={handleCloseDNSxCompanyResultsModal}
-        activeTarget={activeTarget}
-        mostRecentDNSxCompanyScan={mostRecentDNSxCompanyScan}
-      />
-
-      <DNSxCompanyHistoryModal
-        show={showDNSxCompanyHistoryModal}
-        handleClose={handleCloseDNSxCompanyHistoryModal}
-        scans={dnsxCompanyScans}
-      />
-
-      <SubfinderResultsModal
-        showSubfinderResultsModal={showSubfinderResultsModal}
-        handleCloseSubfinderResultsModal={handleCloseSubfinderResultsModal}
-        subfinderResults={mostRecentSubfinderScan}
-      />
-
-      <ShuffleDNSResultsModal
-        showShuffleDNSResultsModal={showShuffleDNSResultsModal}
-        handleCloseShuffleDNSResultsModal={handleCloseShuffleDNSResultsModal}
-        shuffleDNSResults={mostRecentShuffleDNSScan}
-      />
-
-      <ReconResultsModal
-        showReconResultsModal={showReconResultsModal}
-        handleCloseReconResultsModal={handleCloseReconResultsModal}
-        amassResults={{ status: mostRecentAmassScan?.status, result: subdomains, execution_time: mostRecentAmassScan?.execution_time }}
-        sublist3rResults={mostRecentSublist3rScan}
-        assetfinderResults={mostRecentAssetfinderScan}
-        gauResults={mostRecentGauScan}
-        ctlResults={mostRecentCTLScan}
-        subfinderResults={mostRecentSubfinderScan}
-        shuffleDNSResults={mostRecentShuffleDNSScan}
-        gospiderResults={mostRecentGoSpiderScan}
-        subdomainizerResults={mostRecentSubdomainizerScan}
-        cewlResults={mostRecentShuffleDNSCustomScan}
-      />
-
-      <UniqueSubdomainsModal
-        showUniqueSubdomainsModal={showUniqueSubdomainsModal}
-        handleCloseUniqueSubdomainsModal={handleCloseUniqueSubdomainsModal}
-        consolidatedSubdomains={consolidatedSubdomains}
-        setShowToast={setShowToast}
-      />
-
-      <CeWLResultsModal
-        showCeWLResultsModal={showCeWLResultsModal}
-        handleCloseCeWLResultsModal={handleCloseCeWLResultsModal}
-        cewlResults={mostRecentShuffleDNSCustomScan}
-      />
-
-      <GoSpiderResultsModal
-        showGoSpiderResultsModal={showGoSpiderResultsModal}
-        handleCloseGoSpiderResultsModal={handleCloseGoSpiderResultsModal}
-        gospiderResults={mostRecentGoSpiderScan}
-      />
-
-      <SubdomainizerResultsModal
-        showSubdomainizerResultsModal={showSubdomainizerResultsModal}
-        handleCloseSubdomainizerResultsModal={handleCloseSubdomainizerResultsModal}
-        subdomainizerResults={mostRecentSubdomainizerScan}
-      />
-
-      <ScreenshotResultsModal
-        showScreenshotResultsModal={showScreenshotResultsModal}
-        handleCloseScreenshotResultsModal={handleCloseScreenshotResultsModal}
-        activeTarget={activeTarget}
-      />
-
       <Fade in={fadeIn}>
         <ManageScopeTargets
           handleOpen={handleOpen}
@@ -4565,704 +3758,18 @@ function App() {
           activeTarget={activeTarget}
           scopeTargets={scopeTargets}
           getTypeIcon={getTypeIcon}
-          onAutoScan={startAutoScan}
+          onAutoScan={startAutoScanWrapper}
+          onBalancedScan={startBalancedScan}
+          onFullScan={startFullScan}
+          onYOLOScan={startYOLOScan}
           isAutoScanning={isAutoScanning}
-          isAutoScanPaused={isAutoScanPaused}
-          isAutoScanPausing={isAutoScanPausing}
-          isAutoScanCancelling={isAutoScanCancelling}
-          setIsAutoScanPausing={setIsAutoScanPausing}
-          setIsAutoScanCancelling={setIsAutoScanCancelling}
           autoScanCurrentStep={autoScanCurrentStep}
           mostRecentGauScanStatus={mostRecentGauScanStatus}
-          consolidatedSubdomains={consolidatedSubdomains}
-          mostRecentHttpxScan={mostRecentHttpxScan}
-          onOpenAutoScanHistory={handleOpenAutoScanHistoryModal}
         />
       </Fade>
 
-      {activeTarget && (
-        <Fade className="mt-3" in={fadeIn}>
-          <div>
-            {activeTarget.type === 'Company' && (
-              <div className="mb-4">
-                <h3 className="text-danger mb-3">Company</h3>
-                <h4 className="text-secondary mb-3 fs-5">ASN (On-Prem) Network Ranges</h4>
-                <Row className="mb-4">
-                  {[
-                    {
-                      name: 'Amass Intel',
-                      link: 'https://github.com/OWASP/Amass',
-                      description: 'Intelligence gathering and ASN enumeration for comprehensive network range discovery.',
-                      isActive: true,
-                      status: mostRecentAmassIntelScanStatus,
-                      isScanning: isAmassIntelScanning,
-                      onScan: startAmassIntelScan,
-                      onResults: handleOpenAmassIntelResultsModal,
-                      onHistory: handleOpenAmassIntelHistoryModal,
-                      resultCount: (() => {
-                        // If no scan exists, show 0 immediately
-                        if (!mostRecentAmassIntelScan) return 0;
-                        // If scan exists but state not yet populated, show 0 while fetching
-                        return amassIntelNetworkRanges.length;
-                      })(),
-                      resultLabel: 'Network Ranges'
-                    },
-                    {
-                      name: 'Metabigor',
-                      link: 'https://github.com/j3ssie/metabigor',
-                      description: 'OSINT tool for network intelligence gathering including ASN and IP range discovery.',
-                      isActive: true,
-                      status: mostRecentMetabigorCompanyScanStatus,
-                      isScanning: isMetabigorCompanyScanning,
-                      onScan: startMetabigorCompanyScan,
-                      onResults: handleOpenMetabigorCompanyResultsModal,
-                      onHistory: handleOpenMetabigorCompanyHistoryModal,
-                      resultCount: (() => {
-                        // If no scan exists, show 0 immediately  
-                        if (!mostRecentMetabigorCompanyScan) return 0;
-                        // If scan exists but state not yet populated, show 0 while fetching
-                        return metabigorNetworkRanges.length;
-                      })(),
-                      resultLabel: 'Network Ranges'
-                    }
-                  ].map((tool, index) => (
-                    <Col md={6} key={index}>
-                      <Card className="shadow-sm h-100 text-center" style={{ minHeight: '250px' }}>
-                        <Card.Body className="d-flex flex-column">
-                          <Card.Title className="text-danger mb-3">
-                            <a href={tool.link} className="text-danger text-decoration-none">
-                              {tool.name}
-                            </a>
-                          </Card.Title>
-                          <Card.Text className="text-white small fst-italic">
-                            {tool.description}
-                          </Card.Text>
-                          <div className="mt-auto">
-                            <Card.Text className="text-white small mb-3">
-                              {tool.resultLabel}: {tool.resultCount || "0"}
-                            </Card.Text>
-                            <div className="d-flex justify-content-between gap-2">
-                              <Button 
-                                variant="outline-danger" 
-                                className="flex-fill" 
-                                onClick={tool.onHistory}
-                              >
-                                History
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                className="flex-fill"
-                                onClick={tool.onScan}
-                                disabled={!tool.isActive || tool.disabled || tool.isScanning}
-                                title={tool.disabledMessage}
-                              >
-                                <div className="btn-content">
-                                  {tool.isScanning ? (
-                                    <Spinner animation="border" size="sm" />
-                                  ) : (
-                                    'Scan'
-                                  )}
-                                </div>
-                              </Button>
-                              <Button 
-                                variant="outline-danger" 
-                                className="flex-fill" 
-                                onClick={tool.onResults}
-                              >
-                                Results
-                              </Button>
-                            </div>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-                
-                <h4 className="text-secondary mb-3 fs-5">Discover Live Web Servers (On-Prem)</h4>
-                <Row className="mb-4">
-                  <Col>
-                    <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
-                      <Card.Body className="d-flex flex-column">
-                        <Card.Title className="text-danger fs-4 mb-3">Discover Live Web Servers (On-Prem)</Card.Title>
-                        <Card.Text className="text-white small fst-italic mb-4">
-                          Process discovered network ranges to identify live IP addresses and perform port scanning to discover active web servers within the organization's infrastructure.
-                        </Card.Text>
-                        <div className="text-danger mb-4">
-                          <div className="row">
-                            <div className="col">
-                              <h3 className="mb-0">{consolidatedNetworkRangesCount}</h3>
-                              <small className="text-white-50">Network Ranges</small>
-                            </div>
-                            <div className="col">
-                              <h3 className="mb-0">{calculateEstimatedScanTime(consolidatedNetworkRanges)}</h3>
-                              <small className="text-white-50">Est. Scan Time</small>
-                            </div>
-                            <div className="col">
-                              <h3 className="mb-0">{mostRecentIPPortScan?.live_web_servers_found || 0}</h3>
-                              <small className="text-white-50">Live Web Servers</small>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex justify-content-between mt-auto gap-2">
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleTrimNetworkRanges}
-                          >
-                            Trim Network Ranges
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleConsolidateNetworkRanges}
-                            disabled={isConsolidatingNetworkRanges}
-                          >
-                            <div className="btn-content">
-                              {isConsolidatingNetworkRanges ? (
-                                <div className="spinner"></div>
-                              ) : 'Consolidate'}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handleDiscoverLiveIPs}
-                            disabled={isIPPortScanning}
-                          >
-                            <div className="btn-content">
-                              {isIPPortScanning ? (
-                                <div className="spinner"></div>
-                              ) : 'IP/Port Scan'}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handlePortScanning}
-                            disabled={isCompanyMetaDataScanning || 
-                                     mostRecentCompanyMetaDataScanStatus === "pending" || 
-                                     mostRecentCompanyMetaDataScanStatus === "running" ||
-                                     !mostRecentIPPortScan?.live_web_servers_found ||
-                                     mostRecentIPPortScan?.live_web_servers_found === 0}
-                          >
-                            <div className="btn-content">
-                              {isCompanyMetaDataScanning || mostRecentCompanyMetaDataScanStatus === "pending" || mostRecentCompanyMetaDataScanStatus === "running" ? (
-                                <div className="spinner"></div>
-                              ) : 'Gather Metadata'}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handleLiveWebServersResults}
-                            disabled={!mostRecentIPPortScan || !mostRecentIPPortScan.scan_id}
-                          >
-                            Results
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-                <h4 className="text-secondary mb-3 fs-5">Root Domain Discovery (No API Key)</h4>
-                <Row className="row-cols-3 g-3 mb-4">
-                  {[
-                    { 
-                      name: 'Google Dorking', 
-                      link: 'https://www.google.com',
-                      description: 'Advanced Google search techniques to discover company domains, subdomains, and exposed information using search operators.',
-                      isActive: true,
-                      status: mostRecentGoogleDorkingScanStatus,
-                      isScanning: isGoogleDorkingScanning,
-                      onManual: startGoogleDorkingManualScan,
-                      onResults: handleOpenGoogleDorkingResultsModal,
-                      onHistory: handleOpenGoogleDorkingHistoryModal,
-                      resultCount: googleDorkingDomains.length,
-                      isGoogleDorking: true
-                    },
-                    { 
-                      name: 'CRT', 
-                      link: 'https://crt.sh',
-                      description: 'Certificate Transparency logs analysis for company domain discovery.',
-                      isActive: true,
-                      status: mostRecentCTLCompanyScanStatus,
-                      isScanning: isCTLCompanyScanning,
-                      onScan: startCTLCompanyScan,
-                      onResults: handleOpenCTLCompanyResultsModal,
-                      onHistory: handleOpenCTLCompanyHistoryModal,
-                      resultCount: mostRecentCTLCompanyScan && mostRecentCTLCompanyScan.result ? 
-                        mostRecentCTLCompanyScan.result.split('\n').filter(line => line.trim()).length : 0
-                    },
-                    { 
-                      name: 'Reverse Whois', 
-                      link: 'https://www.whoxy.com/reverse-whois/',
-                      description: 'Reverse WHOIS lookup using Whoxy to find other domains registered by the same entity or contact information.',
-                      isActive: true,
-                      status: null,
-                      isScanning: false,
-                      onManual: startReverseWhoisManualScan,
-                      onResults: handleOpenReverseWhoisResultsModal,
-                      resultCount: reverseWhoisDomains.length,
-                      isReverseWhois: true
-                    }
-                  ].map((tool, index) => (
-                    <Col key={index}>
-                      <Card className="shadow-sm h-100 text-center" style={{ minHeight: '250px' }}>
-                        <Card.Body className="d-flex flex-column">
-                          <Card.Title className="text-danger mb-3">
-                            <a href={tool.link} className="text-danger text-decoration-none">
-                              {tool.name}
-                            </a>
-                          </Card.Title>
-                          <Card.Text className="text-white small fst-italic">
-                            {tool.description}
-                          </Card.Text>
-                          <div className="mt-auto">
-                            <Card.Text className="text-white small mb-3">
-                              Domains: {tool.resultCount || "0"}
-                            </Card.Text>
-                            {tool.isGoogleDorking ? (
-                              <div className="d-flex justify-content-between gap-2">
-                                <Button
-                                  variant="outline-danger"
-                                  className="flex-fill"
-                                  onClick={tool.onManual}
-                                >
-                                  Manual
-                                </Button>
-                                <Button 
-                                  variant="outline-danger" 
-                                  className="flex-fill" 
-                                  onClick={tool.onResults}
-                                >
-                                  Results
-                                </Button>
-                              </div>
-                            ) : tool.isReverseWhois ? (
-                              <div className="d-flex justify-content-between gap-2">
-                                <Button
-                                  variant="outline-danger"
-                                  className="flex-fill"
-                                  onClick={tool.onManual}
-                                >
-                                  Manual
-                                </Button>
-                                <Button 
-                                  variant="outline-danger" 
-                                  className="flex-fill" 
-                                  onClick={tool.onResults}
-                                >
-                                  Results
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="d-flex justify-content-between gap-2">
-                                <Button 
-                                  variant="outline-danger" 
-                                  className="flex-fill" 
-                                  onClick={tool.onHistory}
-                                >
-                                  History
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  className="flex-fill"
-                                  onClick={tool.onScan}
-                                  disabled={tool.isScanning || tool.status === "pending"}
-                                >
-                                  <div className="btn-content">
-                                    {tool.isScanning || tool.status === "pending" ? (
-                                      <div className="spinner"></div>
-                                    ) : 'Scan'}
-                                  </div>
-                                </Button>
-                                <Button 
-                                  variant="outline-danger" 
-                                  className="flex-fill" 
-                                  onClick={tool.onResults}
-                                >
-                                  Results
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-                
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h4 className="text-secondary fs-5 mb-0">Root Domain Discovery (API Key)</h4>
-                  <Button 
-                    variant="outline-danger" 
-                    size="sm"
-                    onClick={() => setShowAPIKeysConfigModal(true)}
-                  >
-                    Configure API Keys
-                  </Button>
-                </div>
-                <Row className="row-cols-4 g-3 mb-4">
-                  {[
-                    { 
-                      name: 'SecurityTrails', 
-                      link: 'https://securitytrails.com',
-                      description: 'SecurityTrails is a comprehensive DNS, domain, and IP data provider that helps security teams discover and monitor their digital assets.',
-                      isActive: true,
-                      status: mostRecentSecurityTrailsCompanyScanStatus,
-                      isScanning: isSecurityTrailsCompanyScanning,
-                      onScan: startSecurityTrailsCompanyScan,
-                      onResults: handleOpenSecurityTrailsCompanyResultsModal,
-                      onHistory: handleOpenSecurityTrailsCompanyHistoryModal,
-                      resultCount: mostRecentSecurityTrailsCompanyScan && mostRecentSecurityTrailsCompanyScan.result ? 
-                        (() => {
-                          try {
-                            const parsed = JSON.parse(mostRecentSecurityTrailsCompanyScan.result);
-                            return parsed && parsed.domains ? parsed.domains.length : 0;
-                          } catch (e) {
-                            return 0;
-                          }
-                        })() : 0,
-                      disabled: !hasSecurityTrailsApiKey,
-                      disabledMessage: !hasSecurityTrailsApiKey ? 'SecurityTrails API key not configured' : null
-                    },
-                    { 
-                      name: 'GitHub Recon Tools', 
-                      link: 'https://github.com/gwen001/github-search',
-                      description: 'Looks for organization mentions and domain patterns in public GitHub repos to discover config files, email addresses, or links to other root domains.',
-                      isActive: true,
-                      status: mostRecentGitHubReconScanStatus,
-                      isScanning: isGitHubReconScanning,
-                      onScan: startGitHubReconScan,
-                      onResults: handleOpenGitHubReconResultsModal,
-                      onHistory: handleOpenGitHubReconHistoryModal,
-                      resultCount: mostRecentGitHubReconScan && mostRecentGitHubReconScan.result ? 
-                        (() => {
-                          try {
-                            // Handle null, undefined, or empty string cases
-                            if (!mostRecentGitHubReconScan.result || mostRecentGitHubReconScan.result === '' || 
-                                mostRecentGitHubReconScan.result === 'undefined' || mostRecentGitHubReconScan.result === 'null') {
-                              return 0;
-                            }
-                            
-                            const parsed = JSON.parse(mostRecentGitHubReconScan.result);
-                            
-                            // Handle different possible result structures
-                            if (Array.isArray(parsed)) {
-                              return parsed.length;
-                            } else if (parsed.domains && Array.isArray(parsed.domains)) {
-                              return parsed.domains.length;
-                            }
-                            
-                            return 0;
-                          } catch (e) {
-                            return 0;
-                          }
-                        })() : 0,
-                      disabled: !hasGitHubApiKey,
-                      disabledMessage: !hasGitHubApiKey ? 'GitHub API key not configured' : null
-                    },
-                    { 
-                      name: 'Shodan CLI / API', 
-                      link: 'https://shodan.io',
-                      description: 'Search engine for internet-connected devices and services.',
-                      isActive: true,
-                      status: mostRecentShodanCompanyScanStatus,
-                      isScanning: isShodanCompanyScanning,
-                      onScan: startShodanCompanyScan,
-                      onResults: handleOpenShodanCompanyResultsModal,
-                      onHistory: handleOpenShodanCompanyHistoryModal,
-                      resultCount: mostRecentShodanCompanyScan && mostRecentShodanCompanyScan.result ? 
-                        (() => {
-                          try {
-                            const parsed = JSON.parse(mostRecentShodanCompanyScan.result);
-                            return parsed && parsed.domains ? parsed.domains.length : 0;
-                          } catch (e) {
-                            return 0;
-                          }
-                        })() : 0,
-                      disabled: !hasShodanApiKey,
-                      disabledMessage: !hasShodanApiKey ? 'Shodan API key not configured' : null
-                    },
-                    { 
-                      name: 'Censys', 
-                      link: 'https://censys.io',
-                      description: 'Censys helps security teams discover, monitor, and analyze assets to prevent exposure and reduce risk.',
-                      isActive: true,
-                      status: mostRecentCensysCompanyScanStatus,
-                      isScanning: isCensysCompanyScanning,
-                      onScan: startCensysCompanyScan,
-                      onResults: handleOpenCensysCompanyResultsModal,
-                      onHistory: handleOpenCensysCompanyHistoryModal,
-                      resultCount: mostRecentCensysCompanyScan && mostRecentCensysCompanyScan.result ? 
-                        (() => {
-                          try {
-                            const parsed = JSON.parse(mostRecentCensysCompanyScan.result);
-                            return parsed && parsed.domains ? parsed.domains.length : 0;
-                          } catch (e) {
-                            return 0;
-                          }
-                        })() : 0,
-                      disabled: !hasCensysApiKey,
-                      disabledMessage: !hasCensysApiKey ? 'Censys API key not configured' : null
-                    },
-                  ].map((tool, index) => (
-                    <Col key={index}>
-                      <Card className="shadow-sm h-100 text-center position-relative" style={{ minHeight: '250px' }}>
-                        {(tool.name === 'Shodan CLI / API' || tool.name === 'Censys') && (
-                          <div className="position-absolute" style={{ top: '10px', right: '10px', zIndex: 1 }}>
-                            <i className="bi bi-currency-dollar text-danger" style={{ fontSize: '1.2rem' }} title="Requires paid API key"></i>
-                          </div>
-                        )}
-                        <Card.Body className="d-flex flex-column">
-                          <Card.Title className="text-danger mb-3">
-                            <a href={tool.link} className="text-danger text-decoration-none">
-                              {tool.name}
-                            </a>
-                          </Card.Title>
-                          <Card.Text className="text-white small fst-italic">
-                            {tool.description}
-                          </Card.Text>
-                          <div className="mt-auto">
-                            <Card.Text className="text-white small mb-3">
-                              Domains: {tool.resultCount || "0"}
-                            </Card.Text>
-                            <div className="d-flex justify-content-between gap-2">
-                              <Button 
-                                variant="outline-danger" 
-                                className="flex-fill" 
-                                onClick={tool.onHistory}
-                              >
-                                History
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                className="flex-fill"
-                                onClick={tool.onScan}
-                                disabled={!tool.isActive || tool.disabled || tool.isScanning}
-                                title={tool.disabledMessage}
-                              >
-                                <div className="btn-content">
-                                  {tool.isScanning ? (
-                                    <div className="spinner"></div>
-                                  ) : (
-                                    'Scan'
-                                  )}
-                                </div>
-                              </Button>
-                              <Button 
-                                variant="outline-danger" 
-                                className="flex-fill" 
-                                onClick={tool.onResults}
-                              >
-                                Results
-                              </Button>
-                            </div>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-                
-                <h4 className="text-secondary mb-3 fs-5">Consolidate Root Domains</h4>
-                <Row className="mb-4">
-                  <Col>
-                    <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
-                      <Card.Body className="d-flex flex-column">
-                        <Card.Title className="text-danger fs-4 mb-3">Consolidate Root Domains</Card.Title>
-                        <Card.Text className="text-white small fst-italic mb-4">
-                          Each tool has discovered root domains for the company. Consolidate them into a single list of unique domains and then add them as Wildcard targets for subdomain enumeration.
-                        </Card.Text>
-                        <div className="text-danger mb-4">
-                          <div className="row">
-                            <div className="col">
-                              <h3 className="mb-0">{consolidatedCompanyDomainsCount}</h3>
-                              <small className="text-white-50">Unique Root Domains</small>
-                            </div>
-                            <div className="col">
-                              <h3 className="mb-0">{
-                                scopeTargets.filter(target => {
-                                  if (target.type !== 'Wildcard' || !target.scope_target) return false;
-                                  
-                                  // Remove *. prefix if present to get the base domain
-                                  const baseDomain = target.scope_target.startsWith('*.') 
-                                    ? target.scope_target.substring(2) 
-                                    : target.scope_target;
-                                  
-                                  // Check if this domain exists in consolidated company domains
-                                  return consolidatedCompanyDomains.some(item => {
-                                    const domain = typeof item === 'string' ? item : item.domain;
-                                    return domain && domain.toLowerCase() === baseDomain.toLowerCase();
-                                  });
-                                }).length
-                              }</h3>
-                              <small className="text-white-50">Wildcard Targets Created</small>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex justify-content-between mt-auto gap-2">
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleOpenTrimRootDomainsModal}
-                          >
-                            Trim Root Domains
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleConsolidateCompanyDomains}
-                            disabled={isConsolidatingCompanyDomains}
-                          >
-                            <div className="btn-content">
-                              {isConsolidatingCompanyDomains ? (
-                                <div className="spinner"></div>
-                              ) : 'Consolidate'}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handleInvestigateRootDomains}
-                            disabled={consolidatedCompanyDomainsCount === 0 || isInvestigateScanning}
-                          >
-                            <div className="btn-content">
-                              {isInvestigateScanning ? (
-                                <div className="spinner"></div>
-                              ) : 'Investigate'}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handleValidateRootDomains}
-                            disabled={true}
-                          >
-                            Validate
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={handleOpenAddWildcardTargetsModal}
-                            disabled={consolidatedCompanyDomainsCount === 0}
-                          >
-                            Add Wildcard Target
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-                
-                <h4 className="text-secondary mb-3 fs-5">Cloud Asset Enumeration (DNS)</h4>
-                <Row className="row-cols-2 g-3 mb-4">
-                  <Col>
-                    <Card className="shadow-sm h-100 text-center" style={{ minHeight: '300px' }}>
-                      <Card.Body className="d-flex flex-column">
-                        <Card.Title className="text-danger fs-4 mb-3">
-                          <a href="https://github.com/OWASP/Amass" className="text-danger text-decoration-none">
-                            Amass Enum
-                          </a>
-                        </Card.Title>
-                        <Card.Text className="text-white small fst-italic mb-4">
-                          Advanced DNS enumeration and cloud asset discovery using multiple techniques including DNS brute-forcing, reverse DNS, and certificate transparency.
-                        </Card.Text>
-                        <div className="text-danger mb-4">
-                          <div className="row">
-                            <div className="col">
-                              <h3 className="mb-0">{amassEnumScannedDomainsCount}</h3>
-                              <small className="text-white-50">Company Domains<br/>Scanned</small>
-                            </div>
-                            <div className="col">
-                              <h3 className="mb-0">{amassEnumCompanyCloudDomains?.length || 0}</h3>
-                              <small className="text-white-50">Cloud Assets<br/>Discovered</small>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex justify-content-between mt-auto gap-2">
-                          <Button variant="outline-danger" className="flex-fill" onClick={handleOpenAmassEnumConfigModal}>Config</Button>
-                          <Button variant="outline-danger" className="flex-fill" onClick={handleOpenAmassEnumCompanyHistoryModal}>History</Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={startAmassEnumCompanyScan}
-                            disabled={isAmassEnumCompanyScanning || mostRecentAmassEnumCompanyScanStatus === "pending" || mostRecentAmassEnumCompanyScanStatus === "running"}
-                          >
-                            <div className="btn-content">
-                              {isAmassEnumCompanyScanning || mostRecentAmassEnumCompanyScanStatus === "pending" || mostRecentAmassEnumCompanyScanStatus === "running" ? (
-                                <Spinner animation="border" size="sm" />
-                              ) : (
-                                'Scan'
-                              )}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleOpenAmassEnumCompanyResultsModal}
-                          >
-                            Results
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  <Col>
-                    <Card className="shadow-sm h-100 text-center" style={{ minHeight: '300px' }}>
-                      <Card.Body className="d-flex flex-column">
-                        <Card.Title className="text-danger fs-4 mb-3">
-                          <a href="https://github.com/projectdiscovery/dnsx" className="text-danger text-decoration-none">
-                            DNSx
-                          </a>
-                        </Card.Title>
-                        <Card.Text className="text-white small fst-italic mb-4">
-                          Fast and multi-purpose DNS toolkit for running multiple DNS queries and comprehensive DNS record discovery through advanced resolution techniques.
-                        </Card.Text>
-                        <div className="text-danger mb-4">
-                          <div className="row">
-                            <div className="col">
-                              <h3 className="mb-0">{dnsxScannedDomainsCount}</h3>
-                              <small className="text-white-50">Company Domains<br/>Scanned</small>
-                            </div>
-                            <div className="col">
-                              <h3 className="mb-0">{dnsxCompanyDnsRecords?.length || 0}</h3>
-                              <small className="text-white-50">DNS Records<br/>Discovered</small>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="d-flex justify-content-between mt-auto gap-2">
-                          <Button variant="outline-danger" className="flex-fill" onClick={handleOpenDNSxConfigModal}>Config</Button>
-                          <Button variant="outline-danger" className="flex-fill" onClick={handleOpenDNSxCompanyHistoryModal}>History</Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill"
-                            onClick={startDNSxCompanyScan}
-                            disabled={isDNSxCompanyScanning || mostRecentDNSxCompanyScanStatus === "pending" || mostRecentDNSxCompanyScanStatus === "running"}
-                          >
-                            <div className="btn-content">
-                              {isDNSxCompanyScanning || mostRecentDNSxCompanyScanStatus === "pending" || mostRecentDNSxCompanyScanStatus === "running" ? (
-                                <Spinner animation="border" size="sm" />
-                              ) : (
-                                'Scan'
-                              )}
-                            </div>
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            className="flex-fill" 
-                            onClick={handleOpenDNSxCompanyResultsModal}
-                          >
-                            Results
-                          </Button>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-
                 <h4 className="text-secondary mb-3 fs-5">Cloud Asset Enumeration (Brute-Force & Crawl)</h4>
+                <HelpMeLearn section="companyBruteForceCrawl" />
                 <Row className="row-cols-2 g-3 mb-4">
                   <Col>
                     <Card className="shadow-sm h-100 text-center" style={{ minHeight: '300px' }}>
@@ -5385,6 +3892,7 @@ function App() {
                 </Row>
 
                 <h4 className="text-secondary mb-3 fs-5">{activeTarget.scope_target}'s Full Attack Surface</h4>
+                <HelpMeLearn section="companyDecisionPoint" />
                 <Row className="mb-4">
                   <Col>
                   <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
@@ -5434,6 +3942,18 @@ function App() {
                             'Consolidate'
                           )}
                         </Button>
+                        <Button 
+                          variant="outline-danger" 
+                          className="flex-fill" 
+                          onClick={handleInvestigateFQDNs}
+                          disabled={isInvestigatingFQDNs}
+                        >
+                          {isInvestigatingFQDNs ? (
+                            <div className="spinner"></div>
+                          ) : (
+                            'Investigate'
+                          )}
+                        </Button>
                         <Button variant="outline-danger" className="flex-fill" onClick={handleOpenExploreAttackSurfaceModal}>Explore</Button>
                         <Button variant="outline-danger" className="flex-fill" onClick={handleOpenAttackSurfaceVisualizationModal}>Visualize</Button>
                       </div>
@@ -5443,6 +3963,7 @@ function App() {
                 </Row>
 
                 <h4 className="text-secondary mb-3 fs-5">Nuclei Scanning</h4>
+                <HelpMeLearn section="companyNucleiScanning" />
                 <Row className="mb-4">
                   <Col>
                   <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
@@ -5685,35 +4206,7 @@ function App() {
                   ))}
                 </Row>
                 <h4 className="text-secondary mb-3 fs-5">Consolidate Subdomains & Discover Live Web Servers - Round 1</h4>
-                <Accordion data-bs-theme="dark" className="mb-3">
-                  <Accordion.Item eventKey="0">
-                    <Accordion.Header className="fs-5">Help Me Learn!</Accordion.Header>
-                    <Accordion.Body className="bg-dark">
-                      <ListGroup as="ul" variant="flush">
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic one{' '}
-                          <a href="https://example.com/topic1" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                          <ListGroup as="ul" variant="flush" className="mt-2">
-                            <ListGroup.Item as="li" className="bg-dark text-white fst-italic">
-                              Minor Topic one{' '}
-                              <a href="#" className="text-danger text-decoration-none">
-                                Learn More
-                              </a>
-                            </ListGroup.Item>
-                          </ListGroup>
-                        </ListGroup.Item>
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic two{' '}
-                          <a href="https://example.com/topic2" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                        </ListGroup.Item>
-                      </ListGroup>
-                    </Accordion.Body>
-                  </Accordion.Item>
-                </Accordion>
+                <HelpMeLearn section="consolidationRound1" />
                 <Row className="mb-4">
                   <Col>
                     <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
@@ -5846,35 +4339,7 @@ function App() {
                   ))}
                 </Row>
                 <h4 className="text-secondary mb-3 fs-5">Consolidate Subdomains & Discover Live Web Servers - Round 2</h4>
-                <Accordion data-bs-theme="dark" className="mb-3">
-                  <Accordion.Item eventKey="0">
-                    <Accordion.Header className="fs-5">Help Me Learn!</Accordion.Header>
-                    <Accordion.Body className="bg-dark">
-                      <ListGroup as="ul" variant="flush">
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic one{' '}
-                          <a href="https://example.com/topic1" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                          <ListGroup as="ul" variant="flush" className="mt-2">
-                            <ListGroup.Item as="li" className="bg-dark text-white fst-italic">
-                              Minor Topic one{' '}
-                              <a href="#" className="text-danger text-decoration-none">
-                                Learn More
-                              </a>
-                            </ListGroup.Item>
-                          </ListGroup>
-                        </ListGroup.Item>
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic two{' '}
-                          <a href="https://example.com/topic2" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                        </ListGroup.Item>
-                      </ListGroup>
-                    </Accordion.Body>
-                  </Accordion.Item>
-                </Accordion>
+                <HelpMeLearn section="consolidationRound2" />
                 <Row className="mb-4">
                   <Col>
                     <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
@@ -6005,35 +4470,7 @@ function App() {
                   ))}
                 </Row>
                 <h4 className="text-secondary mb-3 fs-5">Consolidate Subdomains & Discover Live Web Servers - Round 3</h4>
-                <Accordion data-bs-theme="dark" className="mb-3">
-                  <Accordion.Item eventKey="0">
-                    <Accordion.Header className="fs-5">Help Me Learn!</Accordion.Header>
-                    <Accordion.Body className="bg-dark">
-                      <ListGroup as="ul" variant="flush">
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic one{' '}
-                          <a href="https://example.com/topic1" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                          <ListGroup as="ul" variant="flush" className="mt-2">
-                            <ListGroup.Item as="li" className="bg-dark text-white fst-italic">
-                              Minor Topic one{' '}
-                              <a href="#" className="text-danger text-decoration-none">
-                                Learn More
-                              </a>
-                            </ListGroup.Item>
-                          </ListGroup>
-                        </ListGroup.Item>
-                        <ListGroup.Item as="li" className="bg-dark text-white">
-                          Major learning topic two{' '}
-                          <a href="https://example.com/topic2" className="text-danger text-decoration-none">
-                            Learn More
-                          </a>
-                        </ListGroup.Item>
-                      </ListGroup>
-                    </Accordion.Body>
-                  </Accordion.Item>
-                </Accordion>
+                <HelpMeLearn section="consolidationRound3" />
                 <Row className="mb-4">
                   <Col>
                     <Card className="shadow-sm h-100 text-center" style={{ minHeight: '200px' }}>
