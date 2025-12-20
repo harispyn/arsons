@@ -907,8 +907,6 @@ func GetTargetURLsForScopeTarget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[DEBUG] Getting target URLs for scope target ID: %s", scopeTargetID)
-
 	query := `
 		SELECT 
 			id, 
@@ -959,11 +957,11 @@ func GetTargetURLsForScopeTarget(w http.ResponseWriter, r *http.Request) {
 			id                  string
 			url                 string
 			scopeTargetID       string
-			statusCode          int
+			statusCode          sql.NullInt32
 			title               sql.NullString
 			webServer           sql.NullString
 			technologies        []string
-			contentLength       int
+			contentLength       sql.NullInt32
 			findingsJSON        sql.NullString
 			katanaResults       sql.NullString
 			ffufResults         sql.NullString
@@ -1025,22 +1023,15 @@ func GetTargetURLsForScopeTarget(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		log.Printf("[DEBUG] Processing target URL: %s", url)
-		log.Printf("[DEBUG] Status code: %d", statusCode)
-		log.Printf("[DEBUG] Title: %v", title)
-		log.Printf("[DEBUG] Web server: %v", webServer)
-		log.Printf("[DEBUG] Technologies: %v", technologies)
-		log.Printf("[DEBUG] Content length: %d", contentLength)
-
 		targetURL := map[string]interface{}{
 			"id":                     id,
 			"url":                    url,
 			"scope_target_id":        scopeTargetID,
-			"status_code":            statusCode,
+			"status_code":            nullIntToInt(statusCode),
 			"title":                  nullStringToString(title),
 			"web_server":             nullStringToString(webServer),
 			"technologies":           technologies,
-			"content_length":         contentLength,
+			"content_length":         nullIntToInt(contentLength),
 			"findings_json":          nullStringToString(findingsJSON),
 			"katana_results":         nullStringToString(katanaResults),
 			"ffuf_results":           nullStringToString(ffufResults),
@@ -1068,9 +1059,10 @@ func GetTargetURLsForScopeTarget(w http.ResponseWriter, r *http.Request) {
 		targetURLs = append(targetURLs, targetURL)
 	}
 
-	log.Printf("[DEBUG] Returning %d target URLs", len(targetURLs))
-
 	w.Header().Set("Content-Type", "application/json")
+	if targetURLs == nil {
+		targetURLs = make([]map[string]interface{}, 0)
+	}
 	json.NewEncoder(w).Encode(targetURLs)
 }
 
@@ -1100,4 +1092,351 @@ func UpdateTargetURLROIScore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// ConsolidateCompanyDomains consolidates company domains from various sources
+func ConsolidateCompanyDomains(scopeTargetID string) ([]string, error) {
+	log.Printf("[INFO] Starting company domain consolidation for scope target: %s", scopeTargetID)
+
+	// Start a transaction
+	tx, err := dbPool.Begin(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %v", err)
+	}
+	defer tx.Rollback(context.Background())
+
+	domainMap := make(map[string]string) // domain -> source
+
+	// 1. Get domains from Google Dorking
+	log.Printf("[INFO] Fetching Google Dorking domains...")
+	googleRows, err := tx.Query(context.Background(),
+		`SELECT domain FROM google_dorking_domains WHERE scope_target_id = $1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get Google Dorking domains: %v", err)
+	} else {
+		defer googleRows.Close()
+		for googleRows.Next() {
+			var domain string
+			if err := googleRows.Scan(&domain); err == nil {
+				domainMap[domain] = "google_dorking"
+			}
+		}
+	}
+
+	// 2. Get domains from Reverse Whois
+	log.Printf("[INFO] Fetching Reverse Whois domains...")
+	whoisRows, err := tx.Query(context.Background(),
+		`SELECT domain FROM reverse_whois_domains WHERE scope_target_id = $1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get Reverse Whois domains: %v", err)
+	} else {
+		defer whoisRows.Close()
+		for whoisRows.Next() {
+			var domain string
+			if err := whoisRows.Scan(&domain); err == nil {
+				if _, exists := domainMap[domain]; !exists {
+					domainMap[domain] = "reverse_whois"
+				}
+			}
+		}
+	}
+
+	// 3. Get domains from CTL Company scans (most recent only)
+	log.Printf("[INFO] Fetching CTL Company domains...")
+	ctlRows, err := tx.Query(context.Background(),
+		`SELECT result FROM ctl_company_scans 
+		 WHERE scope_target_id = $1 AND status = 'success' AND result IS NOT NULL 
+		 ORDER BY created_at DESC LIMIT 1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get CTL Company domains: %v", err)
+	} else {
+		defer ctlRows.Close()
+		for ctlRows.Next() {
+			var result string
+			if err := ctlRows.Scan(&result); err == nil && result != "" {
+				domains := strings.Split(result, "\n")
+				for _, domain := range domains {
+					domain = strings.TrimSpace(domain)
+					if domain != "" {
+						if _, exists := domainMap[domain]; !exists {
+							domainMap[domain] = "ctl_company"
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Get domains from SecurityTrails Company scans (most recent only)
+	log.Printf("[INFO] Fetching SecurityTrails Company domains...")
+	stRows, err := tx.Query(context.Background(),
+		`SELECT result FROM securitytrails_company_scans 
+		 WHERE scope_target_id = $1 AND status = 'success' AND result IS NOT NULL 
+		 ORDER BY created_at DESC LIMIT 1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get SecurityTrails Company domains: %v", err)
+	} else {
+		defer stRows.Close()
+		for stRows.Next() {
+			var result string
+			if err := stRows.Scan(&result); err == nil && result != "" {
+				var resultData map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &resultData); err == nil {
+					if domains, ok := resultData["domains"].([]interface{}); ok {
+						for _, d := range domains {
+							if domain, ok := d.(string); ok {
+								domain = strings.TrimSpace(domain)
+								if domain != "" {
+									if _, exists := domainMap[domain]; !exists {
+										domainMap[domain] = "securitytrails_company"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 5. Get domains from Censys Company scans (most recent only)
+	log.Printf("[INFO] Fetching Censys Company domains...")
+	censysRows, err := tx.Query(context.Background(),
+		`SELECT result FROM censys_company_scans 
+		 WHERE scope_target_id = $1 AND status = 'success' AND result IS NOT NULL 
+		 ORDER BY created_at DESC LIMIT 1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get Censys Company domains: %v", err)
+	} else {
+		defer censysRows.Close()
+		for censysRows.Next() {
+			var result string
+			if err := censysRows.Scan(&result); err == nil && result != "" {
+				var resultData map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &resultData); err == nil {
+					if domains, ok := resultData["domains"].([]interface{}); ok {
+						for _, d := range domains {
+							if domain, ok := d.(string); ok {
+								domain = strings.TrimSpace(domain)
+								if domain != "" {
+									if _, exists := domainMap[domain]; !exists {
+										domainMap[domain] = "censys_company"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 6. Get domains from GitHub Recon scans (most recent only)
+	log.Printf("[INFO] Fetching GitHub Recon domains...")
+	githubRows, err := tx.Query(context.Background(),
+		`SELECT result FROM github_recon_scans 
+		 WHERE scope_target_id = $1 AND status = 'success' AND result IS NOT NULL 
+		 ORDER BY created_at DESC LIMIT 1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get GitHub Recon domains: %v", err)
+	} else {
+		defer githubRows.Close()
+		for githubRows.Next() {
+			var result string
+			if err := githubRows.Scan(&result); err == nil && result != "" {
+				var resultData map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &resultData); err == nil {
+					if domains, ok := resultData["domains"].([]interface{}); ok {
+						for _, d := range domains {
+							if domain, ok := d.(string); ok {
+								domain = strings.TrimSpace(domain)
+								if domain != "" {
+									if _, exists := domainMap[domain]; !exists {
+										domainMap[domain] = "github_recon"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 7. Get domains from Shodan Company scans (most recent only)
+	log.Printf("[INFO] Fetching Shodan Company domains...")
+	shodanRows, err := tx.Query(context.Background(),
+		`SELECT result FROM shodan_company_scans 
+		 WHERE scope_target_id = $1 AND status = 'success' AND result IS NOT NULL 
+		 ORDER BY created_at DESC LIMIT 1`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get Shodan Company domains: %v", err)
+	} else {
+		defer shodanRows.Close()
+		for shodanRows.Next() {
+			var result string
+			if err := shodanRows.Scan(&result); err == nil && result != "" {
+				var resultData map[string]interface{}
+				if err := json.Unmarshal([]byte(result), &resultData); err == nil {
+					if domains, ok := resultData["domains"].([]interface{}); ok {
+						for _, d := range domains {
+							if domain, ok := d.(string); ok {
+								domain = strings.TrimSpace(domain)
+								if domain != "" {
+									if _, exists := domainMap[domain]; !exists {
+										domainMap[domain] = "shodan_company"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 8. Get domains from Live Web Servers (from ASN network ranges)
+	log.Printf("[INFO] Fetching Live Web Server domains from ASN scans...")
+	liveRows, err := tx.Query(context.Background(),
+		`SELECT DISTINCT lws.url 
+		 FROM live_web_servers lws
+		 JOIN ip_port_scans ips ON lws.scan_id = ips.scan_id
+		 WHERE ips.scope_target_id = $1 AND ips.status = 'success' 
+		 AND (lws.url IS NOT NULL AND lws.url != '')`,
+		scopeTargetID)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get Live Web Server domains: %v", err)
+	} else {
+		defer liveRows.Close()
+		for liveRows.Next() {
+			var url string
+			if err := liveRows.Scan(&url); err == nil {
+				// Extract domain from URL
+				if url != "" {
+					if domain := extractDomainFromURLInConsolidation(url); domain != "" && !isIPv4AddressInConsolidation(domain) {
+						if _, exists := domainMap[domain]; !exists {
+							domainMap[domain] = "live_web_servers"
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Convert to sorted slice
+	var consolidatedDomains []string
+	for domain := range domainMap {
+		consolidatedDomains = append(consolidatedDomains, domain)
+	}
+	sort.Strings(consolidatedDomains)
+
+	log.Printf("[INFO] Total unique company domains found: %d", len(consolidatedDomains))
+
+	// Clear old consolidated domains and insert new ones
+	_, err = tx.Exec(context.Background(), `DELETE FROM consolidated_company_domains WHERE scope_target_id = $1`, scopeTargetID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete old consolidated company domains: %v", err)
+	}
+
+	for _, domain := range consolidatedDomains {
+		source := domainMap[domain]
+		_, err = tx.Exec(context.Background(),
+			`INSERT INTO consolidated_company_domains (scope_target_id, domain, source) VALUES ($1, $2, $3)
+			 ON CONFLICT (scope_target_id, domain) DO NOTHING`,
+			scopeTargetID, domain, source)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert consolidated company domain: %v", err)
+		}
+	}
+
+	if err = tx.Commit(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return consolidatedDomains, nil
+}
+
+// HandleConsolidateCompanyDomains handles the HTTP request to consolidate company domains
+func HandleConsolidateCompanyDomains(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	scopeTargetID := vars["id"]
+	if scopeTargetID == "" {
+		http.Error(w, "Scope target ID is required", http.StatusBadRequest)
+		return
+	}
+
+	consolidatedDomains, err := ConsolidateCompanyDomains(scopeTargetID)
+	if err != nil {
+		http.Error(w, "Failed to consolidate company domains", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"count":   len(consolidatedDomains),
+		"domains": consolidatedDomains,
+	})
+}
+
+// GetConsolidatedCompanyDomains retrieves consolidated company domains for a scope target
+func GetConsolidatedCompanyDomains(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	scopeTargetID := vars["id"]
+	if scopeTargetID == "" {
+		http.Error(w, "Scope target ID is required", http.StatusBadRequest)
+		return
+	}
+
+	query := `SELECT domain FROM consolidated_company_domains WHERE scope_target_id = $1 ORDER BY domain ASC`
+	rows, err := dbPool.Query(context.Background(), query, scopeTargetID)
+	if err != nil {
+		http.Error(w, "Failed to get consolidated company domains", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var domains []string
+	for rows.Next() {
+		var domain string
+		if err := rows.Scan(&domain); err != nil {
+			continue
+		}
+		domains = append(domains, domain)
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"count":   len(domains),
+		"domains": domains,
+	})
+}
+
+// Helper functions for live web server domain extraction in consolidation
+func isIPv4AddressInConsolidation(s string) bool {
+	return strings.Contains(s, ".") &&
+		len(strings.Split(s, ".")) == 4 &&
+		!strings.Contains(s, " ")
+}
+
+func extractDomainFromURLInConsolidation(urlStr string) string {
+	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
+		urlStr = "http://" + urlStr
+	}
+
+	// Simple domain extraction from URL
+	parts := strings.Split(urlStr, "/")
+	if len(parts) >= 3 {
+		hostPart := parts[2]
+		// Remove port if present
+		if colonIndex := strings.Index(hostPart, ":"); colonIndex != -1 {
+			hostPart = hostPart[:colonIndex]
+		}
+		return hostPart
+	}
+	return ""
 }

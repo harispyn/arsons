@@ -157,7 +157,7 @@ func ExecuteAndParseNucleiScreenshotScan(scanID, domain string) {
 		"bash", "-c",
 	}
 
-	nucleiCmd := fmt.Sprintf("echo '%s' > /urls.txt && nuclei -t /root/nuclei-templates/headless/screenshot.yaml -list /urls.txt -headless", strings.Join(urls, "\n"))
+	nucleiCmd := fmt.Sprintf("echo '%s' > /urls.txt && nuclei -t /root/nuclei-templates/headless/screenshot.yaml -list /urls.txt -headless -c 25 -rl 150 -timeout 10 -retries 1 -bs 25", strings.Join(urls, "\n"))
 
 	// Add custom headers if specified
 	if customHeader != "" {
@@ -239,6 +239,13 @@ func ExecuteAndParseNucleiScreenshotScan(scanID, domain string) {
 
 		// Normalize the URL
 		url = NormalizeURL(url)
+
+		// Skip URLs with encoded characters that are nuclei test paths
+		if strings.Contains(url, "%") {
+			log.Printf("[DEBUG] Skipping nuclei test URL with encoded characters: %s", url)
+			continue
+		}
+
 		log.Printf("[DEBUG] Processing screenshot for URL: %s", url)
 
 		// Update target URL with screenshot
