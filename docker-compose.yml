@@ -22,6 +22,8 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     dns_search: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     networks:
       - ars0n-network
@@ -49,7 +51,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ars0n
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
